@@ -1,0 +1,101 @@
+.lesson-view { max-width: 700px; margin: 0 auto; }
+
+.lesson-nav { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+.lesson-nav h2 { font-size: 20px; font-weight: 600; flex: 1; }
+.btn-back { background: none; border: 1px solid var(--border); color: var(--text-secondary); padding: 6px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; }
+.btn-back:hover { border-color: var(--text-muted); color: var(--text-primary); }
+
+/* Content blocks */
+.lesson-content { display: flex; flex-direction: column; gap: 16px; }
+
+.lc-text { font-size: 15px; color: var(--text-primary); line-height: 1.7; }
+
+.lc-heading { font-size: 17px; font-weight: 700; color: var(--accent); margin-top: 8px; }
+
+.lc-example {
+  background: var(--bg-secondary); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm); padding: 14px 18px; font-size: 14px; color: var(--text-primary); line-height: 1.6;
+}
+.lc-example-label { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px; }
+
+.lc-rule {
+  background: rgba(46,204,113,0.08); border: 1px solid rgba(46,204,113,0.2); border-radius: var(--radius-sm);
+  padding: 10px 14px; font-size: 13px; color: var(--text-primary); line-height: 1.5;
+}
+.lc-rule::before { content: '\2713 '; color: var(--success); font-weight: 700; }
+
+.lc-code {
+  background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 14px 18px; font-size: 14px; font-family: 'Cascadia Code','Fira Code',monospace;
+  color: var(--text-primary); overflow-x: auto; white-space: pre; line-height: 1.6;
+}
+
+/* Examples section */
+.lesson-examples-section { margin-top: 8px; }
+.lesson-examples-section h4 { font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
+.lesson-examples { display: flex; flex-wrap: wrap; gap: 6px; }
+.lesson-examples code { background: var(--bg-tertiary); padding: 4px 10px; border-radius: var(--radius-sm); font-size: 13px; font-family: 'Cascadia Code','Fira Code',monospace; color: var(--accent); }
+
+/* Practice section */
+.lesson-practice-section { margin-top: 12px; padding-top: 20px; border-top: 1px solid var(--border); }
+.lesson-practice-section h4 { font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.practice-hint { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+
+.practice-diffs { display: flex; flex-direction: column; gap: 6px; }
+.practice-diff-btn {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 18px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text-primary); font-size: 14px; cursor: pointer; transition: all 0.15s;
+}
+.practice-diff-btn:hover { border-color: var(--text-muted); background: var(--bg-tertiary); }
+.pd-name { font-weight: 600; }
+.pd-xp { font-size: 12px; color: var(--text-muted); }
+
+/* Quiz + Results */
+.quiz-phase { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+.quiz-progress { width: 100%; text-align: center; }
+.quiz-progress span { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; display: block; }
+.quiz-progress-bar { height: 4px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden; }
+.quiz-progress-fill { height: 100%; border-radius: 2px; transition: width 0.3s ease; }
+
+.quiz-task-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 48px 40px; text-align: center; width: 100%; max-width: 500px; }
+.quiz-question { font-size: 30px; font-weight: 600; color: var(--text-primary); font-family: 'Cascadia Code','Fira Code',monospace; margin-bottom: 32px; }
+.quiz-question sub { font-size: 20px; vertical-align: sub; }
+.quiz-input-row { display: flex; gap: 12px; justify-content: center; }
+.quiz-input { width: 200px; padding: 14px 16px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: var(--radius); color: var(--text-primary); font-size: 22px; font-family: 'Cascadia Code','Fira Code',monospace; text-align: center; }
+.quiz-input:focus { outline: none; border-color: var(--accent); }
+.btn-submit-answer { padding: 14px 28px; border: none; border-radius: var(--radius); color: white; font-size: 15px; font-weight: 600; cursor: pointer; }
+.btn-submit-answer:hover { opacity: 0.9; }
+
+.quiz-dots { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.quiz-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+.quiz-dot.correct { background: var(--success); color: white; }
+.quiz-dot.correct::after { content: '\2713'; }
+.quiz-dot.wrong { background: var(--danger); color: white; }
+.quiz-dot.wrong::after { content: '\2717'; }
+.quiz-dot.pending { background: var(--bg-tertiary); border: 1px solid var(--border); }
+
+.results-phase { max-width: 600px; margin: 0 auto; }
+.results-summary { text-align: center; margin-bottom: 32px; }
+.results-score { margin-bottom: 8px; }
+.results-num { font-size: 64px; font-weight: 700; font-family: 'Cascadia Code','Fira Code',monospace; }
+.results-of { font-size: 32px; color: var(--text-muted); font-family: 'Cascadia Code','Fira Code',monospace; }
+.results-xp { font-size: 18px; color: var(--success); font-weight: 600; }
+
+.results-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 24px; }
+.result-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-secondary); border-radius: var(--radius-sm); border-left: 3px solid transparent; font-size: 14px; }
+.result-row.correct { border-left-color: var(--success); }
+.result-row.wrong { border-left-color: var(--danger); }
+.result-num { color: var(--text-muted); font-size: 12px; width: 28px; flex-shrink: 0; }
+.result-question { flex: 1; font-family: 'Cascadia Code','Fira Code',monospace; color: var(--text-primary); }
+.result-your { color: var(--text-secondary); font-family: 'Cascadia Code','Fira Code',monospace; font-size: 13px; flex-shrink: 0; }
+.result-answer { color: var(--text-muted); font-family: 'Cascadia Code','Fira Code',monospace; font-size: 13px; flex-shrink: 0; }
+.result-icon { font-size: 16px; width: 24px; text-align: center; flex-shrink: 0; }
+.result-icon.correct { color: var(--success); }
+.result-icon.wrong { color: var(--danger); }
+
+.results-actions { display: flex; gap: 12px; justify-content: center; }
+.btn-retry { padding: 12px 24px; border: none; border-radius: var(--radius); color: white; font-size: 15px; font-weight: 600; cursor: pointer; }
+.btn-retry:hover { opacity: 0.9; }
+.btn-back-chapters { padding: 12px 24px; background: transparent; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-secondary); font-size: 15px; cursor: pointer; }
+.btn-back-chapters:hover { border-color: var(--text-muted); color: var(--text-primary); }

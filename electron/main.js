@@ -2,11 +2,8 @@ const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 const fs = require('fs')
 
-const isDev = !app.isPackaged
-
 const DATA_DIR = path.join(app.getPath('userData'), 'mathink-data')
-const HISTORY_FILE = path.join(DATA_DIR, 'history.json')
-const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json')
+const DATA_FILE = path.join(DATA_DIR, 'appdata.json')
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -14,20 +11,26 @@ function ensureDataDir() {
   }
 }
 
-function readJson(filePath, fallback) {
-  try {
-    if (fs.existsSync(filePath)) {
-      return JSON.parse(fs.readFileSync(filePath, 'utf-8'))
-    }
-  } catch (e) {
-    console.error('Error reading', filePath, e)
-  }
-  return fallback
+const DEFAULT_DATA = {
+  profile: null,
+  taskResults: [],
+  history: [],
 }
 
-function writeJson(filePath, data) {
+function loadData() {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      return JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'))
+    }
+  } catch (e) {
+    console.error('Error loading data', e)
+  }
+  return DEFAULT_DATA
+}
+
+function saveData(data) {
   ensureDataDir()
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8')
 }
 
 let mainWindow
@@ -67,20 +70,16 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow()
 })
 
-ipcMain.handle('load-history', () => {
-  return readJson(HISTORY_FILE, [])
+ipcMain.handle('load-data', () => {
+  return loadData()
 })
 
-ipcMain.handle('save-history', (_event, history) => {
-  writeJson(HISTORY_FILE, history)
+ipcMain.handle('save-data', (_event, data) => {
+  saveData(data)
   return true
 })
 
-ipcMain.handle('load-settings', () => {
-  return readJson(SETTINGS_FILE, {})
-})
-
-ipcMain.handle('save-settings', (_event, settings) => {
-  writeJson(SETTINGS_FILE, settings)
+ipcMain.handle('reset-data', () => {
+  saveData(DEFAULT_DATA)
   return true
 })
