@@ -1,0 +1,29 @@
+{
+  "name": "mathink",
+  "version": "1.0.0",
+  "description": "MaThink - Aplikacja matematyczna",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start": "electron .",
+    "electron:dev": "vite build && electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mathjs": "^13.2.2",
+    "plotly.js-dist-min": "^2.35.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^44.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}
