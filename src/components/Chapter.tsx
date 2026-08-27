@@ -53,13 +53,20 @@ export default function Chapter({ chapterId, onBack, taskResults, onSolve, onQui
     onQuizActiveChange?.(p === 'quiz')
   }
 
-  const submitAnswer = () => {
-    const ans = parseFloat(userAnswer)
-    if (isNaN(ans) || userAnswer.trim() === '') return
+  const submitAnswer = (value?: string) => {
     const task = tasks[currentIndex]
-    const correct = Math.abs(ans - task.answer) < 0.01
+    let ans: number | string = value ?? ''
+    if (task.options) {
+      ans = value ?? ''
+      if (ans === '') return
+    } else {
+      const num = parseFloat(userAnswer)
+      if (isNaN(num) || userAnswer.trim() === '') return
+      ans = num
+    }
+    const correct = typeof ans === 'number' ? Math.abs(ans - Number(task.answer)) < 0.01 : ans === task.answer
     const xp = correct ? XP_REWARDS[difficulty - 1] : 0
-    const newAnswered = [...answered, { task, userAnswer, correct }]
+    const newAnswered = [...answered, { task, userAnswer: String(ans), correct }]
     setAnswered(newAnswered)
     onSolve({ id: Date.now() + currentIndex, chapterId, difficulty, correct, xpEarned: xp, timestamp: new Date().toISOString() })
     if (currentIndex + 1 < tasks.length) { setCurrentIndex(prev => prev + 1); setUserAnswer('') }
@@ -145,14 +152,24 @@ export default function Chapter({ chapterId, onBack, taskResults, onSolve, onQui
           </div>
           <div className="quiz-task-card">
             <div className="quiz-question">{tasks[currentIndex].display}</div>
-            <div className="quiz-input-row">
-              <input type="text" value={userAnswer} onChange={e => setUserAnswer(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && submitAnswer()}
-                placeholder="Your answer" className="quiz-input" autoFocus />
-              <button className="btn-submit-answer" onClick={submitAnswer} style={{ background: chapter.color }}>
-                {currentIndex + 1 < tasks.length ? 'Next' : 'Finish'}
-              </button>
-            </div>
+            {tasks[currentIndex].options ? (
+              <div className="quiz-mc-row">
+                {tasks[currentIndex].options!.map((opt, oi) => (
+                  <button key={oi} className="quiz-mc-btn" style={{ borderColor: chapter.color + '55' }} onClick={() => submitAnswer(String(opt))}>
+                    {String(opt)}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="quiz-input-row">
+                <input type="text" value={userAnswer} onChange={e => setUserAnswer(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && submitAnswer()}
+                  placeholder="Your answer" className="quiz-input" autoFocus />
+                <button className="btn-submit-answer" onClick={() => submitAnswer()} style={{ background: chapter.color }}>
+                  {currentIndex + 1 < tasks.length ? 'Next' : 'Finish'}
+                </button>
+              </div>
+            )}
           </div>
           {answered.length > 0 && (
             <div className="quiz-dots">

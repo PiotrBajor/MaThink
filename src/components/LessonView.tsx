@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Task, generateLessonBatch, XP_REWARDS } from '../data'
+import MathGraph from './MathGraph'
 import './LessonView.css'
 
 interface Props {
@@ -15,6 +16,17 @@ interface Props {
 }
 
 interface AnsweredTask { task: Task; userAnswer: string; correct: boolean }
+
+function Rich({ text }: { text: string }) {
+  const tokens = text.split(/(~[^~]+~|\^[^ ^]+\^)/g)
+  const parts: ReactNode[] = []
+  tokens.forEach((tok, i) => {
+    if (tok.startsWith('~') && tok.endsWith('~')) parts.push(<sub key={i}>{tok.slice(1, -1)}</sub>)
+    else if (tok.startsWith('^') && tok.endsWith('^')) parts.push(<sup key={i}>{tok.slice(1, -1)}</sup>)
+    else if (tok) parts.push(tok)
+  })
+  return <>{parts}</>
+}
 
 export default function LessonView({ chapterId, lessonIndex, chapterColor, lessonTitle, lessonContent, lessonExamples, onBack, onSolve, onQuizActiveChange }: Props) {
   const [phase, setPhase] = useState<'read' | 'quiz' | 'results'>('read')
@@ -39,13 +51,20 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
     setPhaseSafe('quiz')
   }
 
-  const submitAnswer = () => {
-    const ans = parseFloat(userAnswer)
-    if (isNaN(ans) || userAnswer.trim() === '') return
+  const submitAnswer = (value?: string) => {
     const task = tasks[currentIndex]
-    const correct = Math.abs(ans - task.answer) < 0.01
+    let ans: number | string = value ?? ''
+    if (task.options) {
+      ans = value ?? ''
+      if (ans === '') return
+    } else {
+      const num = parseFloat(userAnswer)
+      if (isNaN(num) || userAnswer.trim() === '') return
+      ans = num
+    }
+    const correct = typeof ans === 'number' ? Math.abs(ans - Number(task.answer)) < 0.01 : ans === task.answer
     const xp = correct ? XP_REWARDS[difficulty - 1] : 0
-    const newAnswered = [...answered, { task, userAnswer, correct }]
+    const newAnswered = [...answered, { task, userAnswer: String(ans), correct }]
     setAnswered(newAnswered)
     onSolve({ id: Date.now() + currentIndex, chapterId, difficulty, correct, xpEarned: xp, timestamp: new Date().toISOString() })
     if (currentIndex + 1 < tasks.length) { setCurrentIndex(prev => prev + 1); setUserAnswer('') }
@@ -69,16 +88,17 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
         <div className="lesson-content">
           {lessonContent.map((block, i) => {
             if (block.type === 'heading') return <h3 key={i} className="lc-heading">{block.content}</h3>
-            if (block.type === 'example') return <div key={i} className="lc-example"><span className="lc-example-label">Example</span>{block.content}</div>
-            if (block.type === 'rule') return <div key={i} className="lc-rule">{block.content}</div>
+            if (block.type === 'example') return <div key={i} className="lc-example"><span className="lc-example-label">Example</span><Rich text={block.content} /></div>
+            if (block.type === 'rule') return <div key={i} className="lc-rule"><Rich text={block.content} /></div>
             if (block.type === 'code') return <pre key={i} className="lc-code">{block.content}</pre>
-            return <p key={i} className="lc-text">{block.content}</p>
+            if (block.type === 'graph') return <MathGraph key={i} expr={block.content} color={chapterColor} />
+            return <p key={i} className="lc-text"><Rich text={block.content} /></p>
           })}
 
           <div className="lesson-examples-section">
             <h4>Quick Examples</h4>
             <div className="lesson-examples">
-              {lessonExamples.map((ex, j) => (<code key={j}>{ex}</code>))}
+              {lessonExamples.map((ex, j) => (<code key={j}><Rich text={ex} /></code>))}
             </div>
           </div>
 
@@ -108,14 +128,24 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
           </div>
           <div className="quiz-task-card">
             <div className="quiz-question">{tasks[currentIndex].display}</div>
-            <div className="quiz-input-row">
-              <input type="text" value={userAnswer} onChange={e => setUserAnswer(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && submitAnswer()}
-                placeholder="Your answer" className="quiz-input" autoFocus />
-              <button className="btn-submit-answer" onClick={submitAnswer} style={{ background: chapterColor }}>
-                {currentIndex + 1 < tasks.length ? 'Next' : 'Finish'}
-              </button>
-            </div>
+            {tasks[currentIndex].options ? (
+              <div className="quiz-mc-row">
+                {tasks[currentIndex].options!.map((opt, oi) => (
+                  <button key={oi} className="quiz-mc-btn" style={{ borderColor: chapterColor + '55' }} onClick={() => submitAnswer(String(opt))}>
+                    {String(opt)}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="quiz-input-row">
+                <input type="text" value={userAnswer} onChange={e => setUserAnswer(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && submitAnswer()}
+                  placeholder="Your answer" className="quiz-input" autoFocus />
+                <button className="btn-submit-answer" onClick={() => submitAnswer()} style={{ background: chapterColor }}>
+                  {currentIndex + 1 < tasks.length ? 'Next' : 'Finish'}
+                </button>
+              </div>
+            )}
           </div>
           {answered.length > 0 && (
             <div className="quiz-dots">

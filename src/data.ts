@@ -18,8 +18,8 @@ export const XP_REWARDS = [10, 20, 35, 55, 80]
 
 export interface Chapter { id: string; title: string; icon: string; color: string; lessons: Lesson[] }
 export interface Lesson { title: string; content: LessonBlock[]; examples: string[] }
-export interface LessonBlock { type: 'text' | 'heading' | 'example' | 'rule' | 'code'; content: string }
-export interface Task { display: React.ReactNode; answer: number; lessonIndex: number }
+export interface LessonBlock { type: 'text' | 'heading' | 'example' | 'rule' | 'code' | 'graph'; content: string }
+export interface Task { display: React.ReactNode; answer: number | string; options?: (string | number)[]; lessonIndex: number }
 
 function rand(a: number, b: number) { return Math.floor(Math.random() * (b - a + 1)) + a }
 function round2(n: number) { return Math.round(n * 100) / 100 }
@@ -209,6 +209,113 @@ export const CHAPTERS: Chapter[] = [
       { type: 'rule', content: 'ln(e) = 1' },
       { type: 'rule', content: 'ln(e\u00B2) = 2, ln(e\u00B3) = 3, etc.' },
     ], examples: ['ln(e) = 1', 'ln(e\u00B3) = 3', 'ln(1) = 0'] },
+    { title: 'Logarithmic Operations & Change of Base', content: [
+      { type: 'text', content: 'Logs of the same base can be combined: adding them multiplies arguments, subtracting them divides arguments.' },
+      { type: 'heading', content: 'Adding Logarithms' },
+      { type: 'text', content: 'log~b~(x) + log~b~(y) = log~b~(x \u00D7 y) — the product rule.' },
+      { type: 'example', content: 'log\u2082(4) + log\u2082(8) = log\u2082(4 \u00D7 8) = log\u2082(32) = 5, because 2\u2075 = 32. As numbers: 2 + 3 = 5.' },
+      { type: 'example', content: 'log(100) + log(1000) = log(100 \u00D7 1000) = log(100000) = 5, because 10\u2075 = 100000. As numbers: 2 + 3 = 5.' },
+      { type: 'heading', content: 'Subtracting Logarithms' },
+      { type: 'text', content: 'log~b~(x) \u2212 log~b~(y) = log~b~(x \u00F7 y) — the quotient rule.' },
+      { type: 'example', content: 'log\u2082(32) \u2212 log\u2082(4) = log\u2082(32 \u00F7 4) = log\u2082(8) = 3, because 2\u00B3 = 8. As numbers: 5 \u2212 2 = 3.' },
+      { type: 'heading', content: 'Change of Base' },
+      { type: 'text', content: 'Many calculators only have log (base 10) and ln (base e). To evaluate a log in another base, use the change of base formula:' },
+      { type: 'rule', content: 'log~b~(x) = log~c~(x) \u00F7 log~c~(b)   (c can be any positive base, usually 10)' },
+      { type: 'example', content: 'log\u2082(8) = log(8) \u00F7 log(2) = 0.903 \u00F7 0.301 = 3. Check: 2\u00B3 = 8 \u2713' },
+      { type: 'example', content: 'log\u2084(16) = log(16) \u00F7 log(4) = 1.204 \u00F7 0.602 = 2. Check: 4\u00B2 = 16 \u2713' },
+      { type: 'example', content: 'log\u2085(125) = log(125) \u00F7 log(5) = 2.097 \u00F7 0.699 = 3. Check: 5\u00B3 = 125 \u2713' },
+      { type: 'rule', content: 'log~b~(x) + log~b~(y) = log~b~(x \u00D7 y)' },
+      { type: 'rule', content: 'log~b~(x) \u2212 log~b~(y) = log~b~(x \u00F7 y)' },
+      { type: 'rule', content: 'Change of base: log~b~(x) = log~c~(x) \u00F7 log~c~(b)' },
+    ], examples: ['log\u2082(4) + log\u2082(8) = 5', 'log\u2082(8) = log(8)/log(2) = 3'] },
+  ]},
+  { id: 'equations', title: 'Equations', icon: '=', color: '#1abc9c', lessons: [
+    { title: 'Solving One-Step Equations', content: [
+      { type: 'text', content: 'An equation says that two expressions are equal, like x + 5 = 12. Solving an equation means finding the value of x that makes it true.' },
+      { type: 'text', content: 'The golden rule: whatever you do to one side, do to the other. To isolate x, use the inverse (opposite) operation.' },
+      { type: 'heading', content: 'Addition and Subtraction' },
+      { type: 'example', content: 'x + 5 = 12 → subtract 5 from both sides → x = 12 \u2212 5 = 7. Check: 7 + 5 = 12 \u2713' },
+      { type: 'example', content: 'x \u2212 4 = 9 → add 4 to both sides → x = 9 + 4 = 13.' },
+      { type: 'heading', content: 'Multiplication and Division' },
+      { type: 'example', content: '3x = 18 → divide both sides by 3 → x = 6.' },
+      { type: 'example', content: 'x/5 = 4 → multiply both sides by 5 → x = 20.' },
+      { type: 'rule', content: 'Whatever you do to one side, do to the other.' },
+      { type: 'rule', content: 'Add or subtract to undo + or \u2212.' },
+      { type: 'rule', content: 'Multiply or divide to undo \u00D7 or \u00F7.' },
+      { type: 'rule', content: 'Always check your answer by plugging it back in.' },
+    ], examples: ['x + 5 = 12 → x = 7', '3x = 18 → x = 6'] },
+    { title: 'Solving Two-Step Equations', content: [
+      { type: 'text', content: 'Two-step equations need two operations to solve. First deal with addition or subtraction, then multiplication or division.' },
+      { type: 'example', content: '2x + 3 = 11 → subtract 3 first → 2x = 8 → divide by 2 → x = 4. Check: 2(4) + 3 = 11 \u2713' },
+      { type: 'text', content: 'Remember the order: undo +/\u2212 first, then undo \u00D7/\u00F7. Think of it as unwrapping a present from the outside in.' },
+      { type: 'example', content: '3x \u2212 5 = 16 → add 5 → 3x = 21 → divide by 3 → x = 7.' },
+      { type: 'example', content: '(x + 2) \u00D7 4 = 24 → divide by 4 first → x + 2 = 6 → subtract 2 → x = 4.' },
+      { type: 'rule', content: 'Undo addition/subtraction before multiplication/division.' },
+      { type: 'rule', content: 'Keep the equation balanced by doing the same to both sides.' },
+      { type: 'rule', content: 'Check your answer in the original equation.' },
+    ], examples: ['2x + 3 = 11 → x = 4', '3x \u2212 5 = 16 → x = 7'] },
+    { title: 'Variables on Both Sides', content: [
+      { type: 'text', content: 'When x appears on both sides, first move all x terms to one side and all numbers to the other.' },
+      { type: 'example', content: '3x \u2212 4 = 2x + 6 → subtract 2x → x \u2212 4 = 6 → add 4 → x = 10.' },
+      { type: 'text', content: 'Choose which side keeps x — usually the side with the larger x coefficient so x stays positive.' },
+      { type: 'example', content: '5x + 2 = 3x + 14 → subtract 3x → 2x + 2 = 14 → subtract 2 → 2x = 12 → x = 6.' },
+      { type: 'example', content: '4x \u2212 7 = x + 8 → subtract x → 3x \u2212 7 = 8 → add 7 → 3x = 15 → x = 5.' },
+      { type: 'rule', content: 'Combine like terms first.' },
+      { type: 'rule', content: 'Move all x terms to one side.' },
+      { type: 'rule', content: 'Move all numbers to the other side.' },
+      { type: 'rule', content: 'Check by substituting back into the original equation.' },
+    ], examples: ['3x \u2212 4 = 2x + 6 → x = 10', '5x + 2 = 3x + 14 → x = 6'] },
+  ]},
+  { id: 'functions', title: 'Functions', icon: 'f(x)', color: '#fdcb6e', lessons: [
+    { title: 'What is a Function?', content: [
+      { type: 'text', content: 'A function is a rule that takes an input and gives exactly one output. It is often written as f(x), read as "f of x".' },
+      { type: 'example', content: 'f(x) = 2x + 1 means: take x, multiply by 2, add 1. So f(3) = 2(3) + 1 = 7.' },
+      { type: 'text', content: 'The x is called the input or independent variable. The result f(x) is the output or dependent variable.' },
+      { type: 'example', content: 'f(x) = x \u2212 4 → f(10) = 10 \u2212 4 = 6. f(0) = 0 \u2212 4 = \u22124.' },
+      { type: 'text', content: 'You can evaluate a function for any input by simply plugging the number in and simplifying.' },
+      { type: 'graph', content: '0.5*x+1' },
+      { type: 'rule', content: 'A function gives exactly one output for every input.' },
+      { type: 'rule', content: 'Evaluate by substituting the input value for x.' },
+      { type: 'rule', content: 'f(x) and y are often used to mean the same output.' },
+    ], examples: ['f(x) = 2x + 1, f(3) = 7', 'f(x) = x \u2212 4, f(10) = 6'] },
+    { title: 'Linear Functions', content: [
+      { type: 'text', content: 'A linear function has the form f(x) = mx + b. Its graph is a straight line. m is the slope, b is the y-intercept.' },
+      { type: 'text', content: 'The slope m tells you how fast the output grows. The y-intercept b is the output when x = 0.' },
+      { type: 'example', content: 'f(x) = 3x \u2212 2: slope is 3, y-intercept is \u22122. f(4) = 3(4) \u2212 2 = 10.' },
+      { type: 'graph', content: '2*x+1' },
+      { type: 'text', content: 'A bigger positive slope makes the line steeper going up. A negative slope makes it go down from left to right.' },
+      { type: 'text', content: 'You can work backwards too: if f(x) = 3x \u2212 2 = 10, then 3x = 12, so x = 4.' },
+      { type: 'rule', content: 'Linear functions form straight lines.' },
+      { type: 'rule', content: 'm is the slope (how much y changes per 1 unit of x).' },
+      { type: 'rule', content: 'b is the y-intercept (value at x = 0).' },
+    ], examples: ['f(x) = 3x \u2212 2, f(4) = 10', 'f(x) = 2x + 5, f(0) = 5'] },
+    { title: 'Quadratic Functions', content: [
+      { type: 'text', content: 'A quadratic function contains x\u00B2 and its graph is a U-shaped curve called a parabola. Its general form (posta\u0107 og\u00F3lna) is f(x) = ax\u00B2 + bx + c.' },
+      { type: 'example', content: 'The sign of a decides the direction of the parabola: a > 0 opens upward (\u2229 shape) — here the vertex is the lowest point.' },
+      { type: 'example', content: 'If a < 0, the parabola opens downward (\u2228 shape) — the vertex is the highest point. Example: f(x) = \u2212x\u00B2 + 3.' },
+      { type: 'graph', content: 'x^2-4' },
+      { type: 'text', content: 'The vertex form (posta\u0107 kanoniczna) is f(x) = a(x \u2212 p)\u00B2 + q, where (p, q) is the vertex — the turning point of the parabola.' },
+      { type: 'example', content: 'f(x) = (x \u2212 3)\u00B2 + 2 → vertex at (3, 2). Since a = 1 > 0, it opens upward.' },
+      { type: 'text', content: 'The factored form (posta\u0107 iloczynowa) is f(x) = a(x \u2212 x\u2081)(x \u2212 x\u2082), where x\u2081 and x\u2082 are the roots (places the graph crosses the x-axis).' },
+      { type: 'example', content: 'f(x) = 2(x \u2212 1)(x \u2212 4) → roots at x = 1 and x = 4.' },
+      { type: 'graph', content: '-(x+1)*(x-3)' },
+      { type: 'rule', content: 'a > 0 → parabola opens up. a < 0 → parabola opens down.' },
+      { type: 'rule', content: 'Vertex form f(x) = a(x \u2212 p)\u00B2 + q reveals the vertex (p, q).' },
+      { type: 'rule', content: 'Factored form f(x) = a(x \u2212 x\u2081)(x \u2212 x\u2082) reveals the roots.' },
+      { type: 'rule', content: 'Evaluate powers before adding or subtracting.' },
+    ], examples: ['f(x) = x\u00B2, f(5) = 25', 'f(x) = (x \u2212 3)\u00B2 + 2, vertex (3, 2)'] },
+    { title: 'Logarithmic Functions', content: [
+      { type: 'text', content: 'The logarithmic function is f(x) = log~b~(x), where b > 0 and b \u2260 1. It answers: "b to what power gives x?"' },
+      { type: 'example', content: 'f(x) = log\u2082(x): f(8) = 3 because 2\u00B3 = 8. f(2) = 1, f(1) = 0.' },
+      { type: 'text', content: 'It is the inverse of the exponential function g(x) = b\u1D38. Where g turns powers into numbers, f turns numbers back into powers.' },
+      { type: 'graph', content: 'log(x, 2)' },
+      { type: 'text', content: 'A logarithm is only defined for positive inputs, so the domain of f is x > 0. Its graph always passes through (1, 0), because b\u2070 = 1.' },
+      { type: 'example', content: 'f(x) = log\u2081\u2080(x): f(1000) = 3 because 10\u00B3 = 1000. f(10) = 1, f(1) = 0, f(0.1) = \u22121.' },
+      { type: 'text', content: 'For b > 1 the function grows, but slower and slower. It never touches the y-axis (x = 0 is not allowed).' },
+      { type: 'rule', content: 'log~b~(x) is only defined for x > 0.' },
+      { type: 'rule', content: 'f(1) = 0 and f(b) = 1 for any valid base b.' },
+      { type: 'rule', content: 'The graph passes through (1, 0) and rises slowly for b > 1.' },
+    ], examples: ['f(x) = log\u2082(x), f(8) = 3', 'f(x) = log\u2081\u2080(x), f(1000) = 3'] },
   ]},
 ]
 
@@ -437,13 +544,20 @@ function genRoot_L0(d: number): Task { // Basic sqrt
   return { display: e.display, answer: e.answer, lessonIndex: 0 }
 }
 
-function genRoot_L1(d: number): Task { // Perfect squares - identify
-  const ranges = [[4,225],[256,625],[676,1225],[1296,2025],[2116,3025]]
-  const [lo,hi] = ranges[Math.min(d-1,4)]
-  const n = rand(lo,hi)
-  const sqrt = Math.round(Math.sqrt(n))
-  if (sqrt*sqrt !== n) return { display: `What is \u221A${sqrt*sqrt}?`, answer: sqrt, lessonIndex: 1 }
-  return { display: `What is \u221A${n}?`, answer: sqrt, lessonIndex: 1 }
+function genRoot_L1(d: number): Task { // Perfect squares - identify or MC
+  const t = rand(0, 1)
+  if (t === 0) {
+    const ranges = [[4,225],[256,625],[676,1225],[1296,2025],[2116,3025]]
+    const [lo,hi] = ranges[Math.min(d-1,4)]
+    const n = rand(lo,hi)
+    const sqrt = Math.round(Math.sqrt(n))
+    if (sqrt*sqrt !== n) { const s=sqrt; return { display: `What is \u221A${s*s}?`, answer: s, lessonIndex: 1 } }
+    return { display: `What is \u221A${n}?`, answer: sqrt, lessonIndex: 1 }
+  }
+  // MC: is it a perfect square?
+  const n = rand(4, 3500)
+  const isPerfect = Math.sqrt(n) === Math.round(Math.sqrt(n))
+  return { display: `Is ${n} a perfect square?`, options: ['Yes', 'No'], answer: isPerfect ? 'Yes' : 'No', lessonIndex: 1 }
 }
 
 function genRoot_L2(d: number): Task { // Estimating
@@ -489,6 +603,92 @@ function genLog_L2(d: number): Task { // Natural log
   return { display: disp, answer: p.exp, lessonIndex: 2 }
 }
 
+function genLog_L3(d: number): Task { // Log operations: add/sub + change of base
+  const t = rand(0, 2)
+  const p2 = (e: number) => Math.pow(2, e)
+  const p10 = (e: number) => Math.pow(10, e)
+  if (t === 0) { // add: log2(2^a) + log2(2^b)
+    const a = rand(1, 8), b = rand(1, 8)
+    const base = rand(0, 1)
+    if (base === 0) return { display: `log\u2082(${p2(a)}) + log\u2082(${p2(b)}) = ?`, answer: a + b, lessonIndex: 3 }
+    return { display: `log(${p10(a)}) + log(${p10(b)}) = ?`, answer: a + b, lessonIndex: 3 }
+  }
+  if (t === 1) { // subtract: log2(2^a) - log2(2^b)
+    const a = rand(2, 9), b = rand(1, a - 1)
+    const base = rand(0, 1)
+    if (base === 0) return { display: `log\u2082(${p2(a)}) \u2212 log\u2082(${p2(b)}) = ?`, answer: a - b, lessonIndex: 3 }
+    return { display: `log(${p10(a)}) \u2212 log(${p10(b)}) = ?`, answer: a - b, lessonIndex: 3 }
+  }
+  // MC: change of base
+  const exp = rand(1, 6), base = rand(2, 8)
+  const value = exp
+  const wrong = [value - 2, value + 1, value + 2].map(v => Math.max(1, v))
+  const options = [...new Set([value, ...wrong])].sort((a, b) => a - b)
+  const disp = React.createElement(React.Fragment, null, 'log', React.createElement('sub', null, String(base)), '(', Math.pow(base, exp), ') = log(', Math.pow(base, exp), ') / log(', base, ') = ?')
+  return { display: disp, options, answer: value, lessonIndex: 3 }
+}
+
+// --- EQUATIONS ---
+function genEquation_L0(d: number): Task { // One-step: x + a = b, x - a = b, a*x = b, x/a = b
+  const t = rand(0, 3)
+  if (t === 0) { const a=rand(1,30), x=rand(1,30); return {display:`x + ${a} = ${x+a} \u2192 x = ?`,answer:x,lessonIndex:0} }
+  if (t === 1) { const a=rand(1,30), x=rand(1,60); return {display:`x \u2212 ${a} = ${x-a} \u2192 x = ?`,answer:x,lessonIndex:0} }
+  if (t === 2) { const a=rand(2,15), x=rand(2,50); return {display:`${a}x = ${a*x} \u2192 x = ?`,answer:x,lessonIndex:0} }
+  const a=rand(2,12), x=rand(2,50); return {display:`x \u00F7 ${a} = ${round2(x/a)} \u2192 x = ?`,answer:x,lessonIndex:0}
+}
+
+function genEquation_L1(d: number): Task { // Two-step: a*x + b = c, a*x - b = c, (x + a)*b = c
+  const t = rand(0, 2)
+  if (t === 0) { const a=rand(2,12), x=rand(2,50), b=rand(1,40); return {display:`${a}x + ${b} = ${a*x+b} \u2192 x = ?`,answer:x,lessonIndex:1} }
+  if (t === 1) { const a=rand(2,12), x=rand(2,50), b=rand(1,30); return {display:`${a}x \u2212 ${b} = ${a*x-b} \u2192 x = ?`,answer:x,lessonIndex:1} }
+  const b=rand(2,10), a=rand(2,15), x=rand(2,30); return {display:`(x + ${a}) \u00D7 ${b} = ${b*(x+a)} \u2192 x = ?`,answer:x,lessonIndex:1}
+}
+
+function genEquation_L2(d: number): Task { // Variables both sides: a*x + b = c*x + rhs (a > c)
+  const a=rand(3,15), c=rand(1,a-1), b=rand(1,40), x=rand(2,50)
+  const rhs = (a-c)*x + b
+  return { display: `${a}x + ${b} = ${c}x + ${rhs} \u2192 x = ?`, answer: x, lessonIndex: 2 }
+}
+
+// --- FUNCTIONS ---
+function genFunction_L0(d: number): Task { // f(x) = ax + b, evaluate f(c)
+  const a=rand(2,12), b=rand(1,20), c=rand(1,12)
+  return { display: `f(x) = ${a}x ${b>=0?'+':'\u2212'} ${Math.abs(b)} \u2192 f(${c}) = ?`, answer: a*c+b, lessonIndex: 0 }
+}
+
+function genFunction_L1(d: number): Task { // Linear: forward or reverse
+  const t = rand(0, 1)
+  if (t === 0) { const m=rand(2,15),b=rand(-30,30), x=rand(1,15); return { display: `f(x) = ${m}x ${b>=0?'+':'\u2212'} ${Math.abs(b)} \u2192 f(${x}) = ?`, answer: m*x+b, lessonIndex: 1 } }
+  const m=rand(2,10), x=rand(2,20), b=rand(-30,30), y=m*x+b
+  return { display: `f(x) = ${m}x ${b>=0?'+':'\u2212'} ${Math.abs(b)} \u2192 f(x) = ${y} \u2192 x = ?`, answer: x, lessonIndex: 1 }
+}
+
+function genFunction_L2(d: number): Task { // Quadratic: evaluate, direction MC, vertex fill, root fill
+  const t = rand(0, 4)
+  if (t === 0) { const b=rand(0,50), x=rand(1,12); return { display: `f(x) = x\u00B2 ${b>=0?'+':'\u2212'} ${Math.abs(b)} \u2192 f(${x}) = ?`, answer: x*x+b, lessonIndex: 2 } }
+  if (t === 1) { const a=rand(2,8), c=rand(0,30), x=rand(1,10); return { display: `f(x) = ${a}x\u00B2 ${c>=0?'+':'\u2212'} ${Math.abs(c)} \u2192 f(${x}) = ?`, answer: a*x*x+c, lessonIndex: 2 } }
+  if (t === 2) { const x=rand(1,15); return { display: `f(x) = x\u00B2 \u2192 f(${x}) = ?`, answer: x*x, lessonIndex: 2 } }
+  if (t === 3) { // MC: direction of parabola
+    let a = 0; while (a === 0) a = rand(-8, 8)
+    const up = a > 0
+    const c = rand(0, 20)
+    const sign = a > 0 ? '' : '\u2212'
+    const disp = React.createElement(React.Fragment, null, `f(x) = ${sign}${Math.abs(a)===1?'':Math.abs(a)}x\u00B2`, c>0 ? ` + ${c}` : '', ' \u2192 parabola opens...')
+    return { display: disp, options: ['Up', 'Down'], answer: up ? 'Up' : 'Down', lessonIndex: 2 }
+  }
+  // vertex fill: f(x) = (x - p)^2 + q → vertex (p, q)
+  const p = rand(1, 12), q = rand(1, 60)
+  const disp = React.createElement(React.Fragment, null, 'f(x) = (x \u2212 ', p, ')\u00B2 + ', q, ' \u2192 vertex (', p, ', ?)')
+  return { display: disp, answer: q, lessonIndex: 2 }
+}
+
+function genFunction_L3(d: number): Task { // Logarithmic function: evaluate f(b^e)
+  const b = rand(2, 6), e = rand(1, 6)
+  const subd = '\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089'
+  const disp = React.createElement(React.Fragment, null, 'f(x) = log', subd[b], '(x) \u2192 f(', Math.pow(b, e), ') = ?')
+  return { display: disp, answer: e, lessonIndex: 3 }
+}
+
 // ============ GENERATORS MAP ============
 
 type GenFn = (d: number) => Task
@@ -499,7 +699,9 @@ const LESSON_GENS: Record<string, GenFn[]> = {
   'multiplication': [genMul_L0, genMul_L1, genMul_L2],
   'division': [genDiv_L0, genDiv_L1, genDiv_L2],
   'roots': [genRoot_L0, genRoot_L1, genRoot_L2],
-  'logarithms': [genLog_L0, genLog_L1, genLog_L2],
+  'logarithms': [genLog_L0, genLog_L1, genLog_L2, genLog_L3],
+  'equations': [genEquation_L0, genEquation_L1, genEquation_L2],
+  'functions': [genFunction_L0, genFunction_L1, genFunction_L2, genFunction_L3],
 }
 
 // ============ PUBLIC API ============
