@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Chapter, CHAPTERS, TaskResult, getLevelForXp } from '../data'
+import { CHAPTERS, TaskResult, getLevelForXp } from '../data'
 import './Tasks.css'
 
 interface Props {
@@ -8,29 +8,23 @@ interface Props {
   xp: number
 }
 
+const TEST_LEN = 15
+
 export default function Tasks({ onSelectChapter, taskResults, xp }: Props) {
   const { level } = getLevelForXp(xp)
 
   const chapterStats = useMemo(() => {
-    const map: Record<string, { solved: number; correct: number; bestDiff: number }> = {}
-    CHAPTERS.forEach(ch => { map[ch.id] = { solved: 0, correct: 0, bestDiff: 0 } })
+    const map: Record<string, { solved: number; correct: number; lessonCounts: number[] }> = {}
+    CHAPTERS.forEach(ch => { map[ch.id] = { solved: 0, correct: 0, lessonCounts: new Array<number>(ch.lessons.length).fill(0) } })
     taskResults.forEach(t => {
       const s = map[t.chapterId]
-      if (s) { s.solved++; if (t.correct) s.correct++ }
-    })
-    CHAPTERS.forEach(ch => {
-      const s = map[ch.id]
-      for (let d = 1; d <= 5; d++) {
-        const atD = taskResults.filter(t => t.chapterId === ch.id && t.difficulty === d)
-        const atDCorrect = atD.filter(t => t.correct).length
-        if (atD.length >= 5 && atDCorrect / atD.length >= 0.8) s.bestDiff = d
-        else break
+      if (s) {
+        s.solved++; if (t.correct) s.correct++
+        if (t.lessonIndex != null && t.lessonIndex >= 0 && t.lessonIndex < s.lessonCounts.length) s.lessonCounts[t.lessonIndex]++
       }
     })
     return map
   }, [taskResults])
-
-  const maxDiff = 5
 
   return (
     <div className="tasks">
@@ -60,13 +54,9 @@ export default function Tasks({ onSelectChapter, taskResults, xp }: Props) {
               </div>
               <div className="chapter-stats">
                 <span className="chapter-solved">{stats.solved} solved</span>
-                <div className="chapter-diff-dots">
-                  {Array.from({ length: maxDiff }, (_, i) => (
-                    <span
-                      key={i}
-                      className={`diff-dot ${i < stats.bestDiff ? 'filled' : ''}`}
-                      style={{ background: i < stats.bestDiff ? ch.color : undefined }}
-                    />
+                <div className="chapter-diff-dots" title="Lessons completed">
+                  {stats.lessonCounts.map((done, i) => (
+                    <span key={i} className={`diff-dot ${done >= TEST_LEN ? 'lesson-done' : ''}`} style={{ background: done >= TEST_LEN ? '#2ecc71' : undefined }} />
                   ))}
                 </div>
               </div>

@@ -14,6 +14,9 @@ interface Props {
 type Phase = 'menu' | 'quiz' | 'results'
 interface AnsweredTask { task: Task; userAnswer: string; correct: boolean }
 
+const TEST_LEN = 15
+const LEVEL_NAMES = ['Easy', 'Medium', 'Hard', 'Expert', 'Master']
+
 export default function Chapter({ chapterId, onBack, taskResults, onSolve, onQuizActiveChange }: Props) {
   const chapter = useMemo(() => CHAPTERS.find(c => c.id === chapterId)!, [chapterId])
   const [phase, setPhase] = useState<Phase>('menu')
@@ -35,12 +38,14 @@ export default function Chapter({ chapterId, onBack, taskResults, onSolve, onQui
       if (atD.length >= 5 && atDCorrect / atD.length >= 0.8) bestDiff = d
       else break
     }
-    return { solved, correct, bestDiff, bestDiffLabel: ['Easy','Medium','Hard','Expert','Master'][bestDiff] || 'Easy' }
-  }, [taskResults, chapterId])
+    const lessonCounts = new Array<number>(chapter.lessons.length).fill(0)
+    cr.forEach(t => { if (t.lessonIndex != null && t.lessonIndex >= 0 && t.lessonIndex < lessonCounts.length) lessonCounts[t.lessonIndex]++ })
+    return { solved, correct, bestDiff, bestDiffLabel: LEVEL_NAMES[bestDiff] || LEVEL_NAMES[0], lessonCounts }
+  }, [taskResults, chapterId, chapter.lessons.length])
 
   const startChapterQuiz = (diff: number) => {
     setDifficulty(diff)
-    const batch = generateChapterBatch(chapterId, diff, 10)
+    const batch = generateChapterBatch(chapterId, diff, TEST_LEN)
     setTasks(batch)
     setCurrentIndex(0)
     setUserAnswer('')
@@ -64,17 +69,22 @@ export default function Chapter({ chapterId, onBack, taskResults, onSolve, onQui
       if (isNaN(num) || userAnswer.trim() === '') return
       ans = num
     }
-    const correct = typeof ans === 'number' ? Math.abs(ans - Number(task.answer)) < 0.01 : ans === task.answer
-    const xp = correct ? XP_REWARDS[difficulty - 1] : 0
+    const correct = task.options
+      ? String(ans) === String(task.answer)
+      : typeof ans === 'number'
+        ? Math.abs(ans - Number(task.answer)) < 0.01
+        : ans === task.answer
+    const qd = task.difficulty ?? difficulty
+    const xp = correct ? XP_REWARDS[qd - 1] : 0
     const newAnswered = [...answered, { task, userAnswer: String(ans), correct }]
     setAnswered(newAnswered)
-    onSolve({ id: Date.now() + currentIndex, chapterId, difficulty, correct, xpEarned: xp, timestamp: new Date().toISOString() })
+    onSolve({ id: Date.now() + currentIndex, chapterId, difficulty: qd, correct, xpEarned: xp, timestamp: new Date().toISOString(), lessonIndex: task.lessonIndex })
     if (currentIndex + 1 < tasks.length) { setCurrentIndex(prev => prev + 1); setUserAnswer('') }
     else setPhaseSafe('results')
   }
 
   const totalCorrect = answered.filter(a => a.correct).length
-  const totalXp = answered.reduce((s, a) => s + (a.correct ? XP_REWARDS[difficulty - 1] : 0), 0)
+  const totalXp = answered.reduce((s, a) => s + (a.correct ? XP_REWARDS[(a.task.difficulty ?? difficulty) - 1] : 0), 0)
 
   // Show lesson view if a lesson is selected
   if (selectedLesson !== null) {
@@ -115,6 +125,7 @@ export default function Chapter({ chapterId, onBack, taskResults, onSolve, onQui
                   <p className="lesson-preview">{lesson.content[0]?.content.slice(0, 100)}...</p>
                   <span className="lesson-open-hint">Open lesson {'\u2192'}</span>
                 </div>
+                {stats.lessonCounts[i] >= TEST_LEN && <span className="lesson-done-dot" title="Lesson test completed" />}
               </button>
             ))}
           </div>
@@ -134,9 +145,28 @@ export default function Chapter({ chapterId, onBack, taskResults, onSolve, onQui
                 <span className="summary-val">{stats.bestDiffLabel}</span>
               </div>
             </div>
-            <button className="btn-chapter-quiz" onClick={() => startChapterQuiz(Math.max(1, stats.bestDiff))} style={{ background: chapter.color }}>
-              Mixed Practice (All Lessons)
-            </button>
+
+            <div className="chapter-test-box">
+              <h4>Chapter Test</h4>
+              <p className="chapter-test-hint">Mixed {TEST_LEN}-question test over all lessons. Questions start easy and get harder. Unlock levels by scoring 80% at the current level.</p>
+              <div className="chapter-test-levels">
+                {[1,2,3,4,5].map(lvl => {
+                  const locked = lvl > stats.bestDiff + 1
+                  return (
+                    <button
+                      key={lvl}
+                      className={`chapter-test-btn ${locked ? 'locked' : ''}`}
+                      style={{ borderColor: chapter.color + '55', background: stats.bestDiff + 1 >= lvl ? chapter.color : undefined }}
+                      disabled={locked}
+                      onClick={() => startChapterQuiz(lvl)}
+                    >
+                      <span className="ctb-name">{LEVEL_NAMES[lvl - 1]}</span>
+                      <span className="ctb-xp">+{XP_REWARDS[lvl - 1]} XP</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
           </div>
         </>
       )}

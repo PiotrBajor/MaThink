@@ -1,0 +1,583 @@
+➕ 1. DODAWANIE
+1. Oblicz wynik
+
+Klasyk, ale potrzebny.
+
+347 + 582 = ?
+
+2. Brakująca liczba
+
+347 + ? = 582
+
+3. Brakujący składnik
+
+? + 275 = 640
+
+4. Znajdź błąd
+
+Aplikacja pokazuje:
+
+347 + 286 = 523
+
+Czy rozwiązanie jest poprawne? Jeśli nie, popraw je.
+
+5. Ułóż liczby
+
+Masz kafelki:
+
+125 | + | 348 | = | 473
+
+Trzeba ułożyć poprawne równanie.
+
+6. Porównaj
+
+Który wynik jest większy?
+
+347 + 82 🆚 400 + 21
+
+7. Szacowanie
+
+Bez dokładnego liczenia: około ile wynosi 398 + 203?
+
+Opcje:
+
+500
+600
+700
+800
+8. Zadanie tekstowe
+
+Kuba ma 347 zł. Dostaje od babci 125 zł. Ile ma teraz?
+
+9. Prawda/fałsz
+
+248 + 371 = 619
+
+10. Seria combo
+
+25 + 17 → + 34 → + 82 → + 19
+
+Uczeń musi śledzić wynik po każdym kroku.
+
+➖ 2. ODEJMOWANIE
+
+Analogicznie, ale można dodać kilka ciekawszych mechanik.
+
+1. Oblicz
+
+823 - 467 = ?
+
+2. Brakująca liczba
+
+823 - ? = 467
+
+3. Znajdź błąd
+
+900 - 347 = 653
+
+4. Odtwórz działanie
+
+Ktoś wykonał 742 - 386, ale zgubił kilka cyfr.
+
+  7 4 2
+- 3 ? 6
+------
+  3 5 6
+5. Najbliższy wynik
+
+Który wynik jest najbliżej 801 - 398?
+
+6. Temperatura
+
+Rano było -4°C, a po południu 7°C.
+
+O ile stopni wzrosła temperatura?
+
+Tutaj zaczynasz przygotowywać grunt pod liczby ujemne.
+
+7. Pieniądze
+
+Masz 150 zł. Kupujesz coś za 87,50 zł. Ile zostaje?
+
+8. „Ile brakuje?”
+
+Masz 73 punkty. Do 100 brakuje Ci...?
+
+9. Porównywanie różnic
+
+O ile większa jest różnica między A i B niż między C i D?
+
+✖️ 3. MNOŻENIE
+
+Tutaj można zrobić naprawdę dużo fajnych rzeczy.
+
+1. Zwykłe mnożenie
+
+17 × 8
+
+2. Brakujący czynnik
+
+? × 7 = 56
+
+3. Tabliczka mnożenia jako gra
+
+Na ekranie pojawia się:
+
+7 × 8
+
+i kilka ruchomych odpowiedzi.
+
+4. Znajdź wszystkie poprawne
+
+Które działania dają 48?
+
+6 × 8
+12 × 4
+16 × 3
+7 × 7
+5. Znajdź błąd
+
+23 × 4 = 82
+
+Popraw wynik.
+
+6. Grupowanie
+
+Obrazek pokazuje np. 4 rzędy po 6 obiektów.
+
+Ile obiektów jest razem?
+
+7. Odwrócone mnożenie
+
+Mam 42 jabłka. Układam je po 6 w każdym koszyku.
+
+Ile koszyków?
+
+To naturalnie przygotowuje do dzielenia.
+
+8. Mnożenie przez 10/100/1000
+
+Ale zamiast samego wyniku:
+
+Przeciągnij przecinek w odpowiednie miejsce.
+
+9. Pieniądze
+
+7 biletów kosztuje po 18 zł. Ile kosztują razem?
+
+10. Mnożenie mentalne
+
+Masz 5 sekund.
+
+25 × 4
+
+Potem:
+
+25 × 16
+
+➗ 4. DZIELENIE
+1. Zwykłe dzielenie
+
+144 ÷ 12
+
+2. Brakująca liczba
+
+? ÷ 8 = 12
+
+3. Dzielenie jako grupowanie
+
+36 cukierków trzeba rozłożyć po 4.
+
+Uczeń przeciąga cukierki do pudełek.
+
+4. Czy podzielisz równo?
+
+Czy 53 można podzielić na 7 równych grup?
+
+5. Reszta
+
+47 ÷ 5
+
+Wynik: ?, reszta: ?
+
+6. Znajdź błąd
+
+125 ÷ 5 = 20
+
+7. Dzielenie pieniędzy
+
+120 zł trzeba podzielić równo między 5 osób.
+
+8. Dzielenie dziesiętne
+
+7,5 ÷ 3
+
+9. Dzielenie pisemne
+
+Interaktywne pola:
+
+   124
+  -----
+8 | 992
+
+Uczeń wpisuje każdy krok, a nie tylko końcowy wynik.
+
+10. „Które rozwiązanie jest lepsze?”
+
+Np. dwa sposoby rozwiązania:
+
+480 ÷ 16
+
+Uczeń wybiera szybszą metodę i wyjaśnia dlaczego.
+
+√ 5. PIERWIASTKI
+
+Tu już można zrobić coś dużo ciekawszego niż √144 = ?.
+
+1. Oblicz
+
+√144
+
+2. Dopasuj
+
+Kafelki:
+
+√25, √81, √121
+
+do:
+
+5, 9, 11.
+
+3. Brakująca liczba
+
+√? = 12
+
+4. Czy to pierwiastek całkowity?
+
+√72
+
+Tak/nie.
+
+5. Znajdź błąd
+
+√64 = 6
+
+6. Szacowanie
+
+Między jakimi liczbami znajduje się √50?
+
+7 < √50 < 8
+
+7. Oś liczbowa
+
+Uczeń przeciąga √30 na właściwe miejsce.
+
+8. Uporządkuj
+
+Od najmniejszego:
+
+√18, √5, √32, √10
+
+9. Upraszczanie
+
+√72 → ?
+
+Uczeń rozkłada:
+
+72 = 36 × 2
+
+więc:
+
+√72 = 6√2
+
+10. Geometria
+
+Kwadrat ma pole 81 cm².
+
+Jaka jest długość jego boku?
+
+To jest dużo bardziej naturalne niż suche pierwiastki.
+
+🔢 6. LOGARYTMY
+
+Tutaj szczególnie pilnowałbym różnorodności, bo logarytmy łatwo zamienić w piekło typu „oblicz 17 przykładów”.
+
+1. Podstawowy
+
+log₂ 8 = ?
+
+2. Brakująca potęga
+
+2^? = 32
+
+Aplikacja prowadzi ucznia do:
+
+log₂ 32 = 5
+
+3. Dopasowanie
+log₂ 8    → 3
+log₃ 81   → 4
+log₁₀ 100 → 2
+4. Zamiana postaci
+
+Przekształć:
+
+log₂ 16 = 4
+
+na:
+
+2⁴ = 16
+
+5. Znajdź błąd
+
+log₂ 16 = 8
+
+6. Prawda/fałsz
+
+log₅ 25 = 2
+
+7. Logarytm na osi
+
+Wizualizacja zależności:
+
+2¹ → 2² → 2³ → 2⁴
+
+i odpowiadających im logarytmów.
+
+8. Reguły logarytmów
+
+Uczeń ma:
+
+log(a) + log(b)
+
+i musi wybrać:
+
+log(ab)
+
+9. Rozwiąż równanie
+
+log₂ x = 5
+
+10. Zadanie praktyczne
+
+Np. skala decybeli, pH albo wzrost populacji.
+
+Wprowadzenie do zastosowania logarytmów w prawdziwym świecie.
+
+⚖️ 7. RÓWNANIA
+
+Tutaj zrobiłbym jeden z najbogatszych systemów w całej aplikacji.
+
+1. Zwykłe rozwiązanie
+
+x + 7 = 15
+
+2. Wybierz następny krok
+2x + 7 = 19
+
+Co robimy?
+
+dodajemy 7
+odejmujemy 7
+mnożymy przez 7
+dzielimy przez 7
+3. Rozwiąż krok po kroku
+
+Uczeń wpisuje:
+
+2x + 7 = 19
+2x = 12
+x = 6
+4. Znajdź błąd
+
+AI pokazuje rozwiązanie ucznia:
+
+2x + 7 = 19
+2x = 26 ❌
+
+W którym miejscu popełniono błąd?
+
+5. Uzupełnij krok
+3x + 8 = 20
+3x = ?
+6. Sortowanie kroków
+
+Dostajesz 4 kroki rozwiązania w złej kolejności i układasz je.
+
+7. Równanie z nawiasami
+
+3(x + 2) = 18
+
+8. Równania z ułamkami
+
+x/3 + 2 = 7
+
+9. Równania z liczbami dziesiętnymi
+
+1,5x + 3 = 12
+
+10. Zadanie tekstowe
+
+Bilet kosztuje 15 zł. Kupiłeś kilka biletów i zapłaciłeś 90 zł.
+
+Ile biletów kupiłeś?
+
+Najpierw trzeba samemu stworzyć równanie.
+
+11. „Zbuduj równanie”
+
+Masz:
+
+liczba
+× 4
++ 7
+= 31
+
+Uczeń buduje:
+
+4x + 7 = 31
+
+12. Równania bez rozwiązania / nieskończenie wiele rozwiązań
+
+Na wyższym poziomie:
+
+2x + 4 = 2x + 4
+
+oraz:
+
+2x + 4 = 2x + 7
+
+📈 8. FUNKCJE
+
+Tutaj możesz zrobić najbardziej wizualny dział aplikacji.
+
+1. Oblicz wartość funkcji
+
+f(x) = 2x + 3
+
+f(4) = ?
+
+2. Uzupełnij tabelę
+x	f(x)
+-2	?
+-1	?
+0	?
+1	?
+2	?
+3. Dopasuj wzór do wykresu
+
+Pokazujesz 4 wykresy:
+
+f(x)=2x+1
+f(x)=-x+3
+f(x)=x
+f(x)=-2x
+
+Uczeń wybiera właściwy.
+
+4. Dopasuj wykres do tabeli
+
+Tabela + kilka wykresów.
+
+5. Narysuj wykres
+
+Uczeń zaznacza punkty:
+
+(-2, 1), (0, 3), (2, 5)
+
+i aplikacja buduje wykres.
+
+6. Znajdź miejsce zerowe
+
+f(x)=2x-8
+
+Gdzie wykres przecina oś X?
+
+7. Odczytaj z wykresu
+
+Pokazujesz wykres.
+
+Ile wynosi f(3)?
+
+8. Znajdź błąd
+
+AI pokazuje:
+
+„Ten wykres przedstawia funkcję f(x) = 2x + 1.”
+
+Uczeń:
+
+❌ Nie, nachylenie jest inne.
+
+9. Zmień parametry
+
+To byłby świetny interaktywny typ zadania.
+
+Masz:
+
+f(x) = ax + b
+
+Suwaki:
+
+a: ─────●────
+b: ───●──────
+
+I wykres zmienia się na żywo.
+
+Polecenie:
+
+Ustaw a = -2 i b = 5.
+
+10. „Polowanie na funkcję”
+
+Aplikacja pokazuje wykres i mówi:
+
+Znajdź wzór funkcji.
+
+Uczeń musi znaleźć:
+
+współczynnik kierunkowy
+wyraz wolny
+
+i stworzyć wzór.
+
+11. Funkcje w realnym świecie
+
+Taksówka kosztuje 8 zł opłaty początkowej + 3 zł za kilometr.
+
+Uczeń tworzy:
+
+f(x) = 3x + 8
+
+12. Porównaj dwie funkcje
+
+f(x)=2x+5
+
+g(x)=3x+1
+
+Dla jakiego x mają tę samą wartość?
+
+🧠 I zrobiłbym jeszcze wspólny system „typów interakcji”
+
+Żeby cała aplikacja nie wyglądała jak:
+
+Pytanie → pole tekstowe → Enter → dobrze/źle → następne.
+
+Każdy dział może korzystać z:
+
+Typ	Przykład
+✍️ Wpisz wynik	27 × 8 = ?
+🧩 Uzupełnij lukę	27 × ? = 216
+🎯 Wybierz odpowiedź	A/B/C/D
+🔀 Ułóż kroki	rozwiązanie równania
+🕵️ Znajdź błąd	błędne rozwiązanie
+🔗 Dopasuj	wzór ↔ wykres
+📊 Odczytaj wykres	f(3)=?
+🧱 Zbuduj równanie	elementy → równanie
+🎚️ Steruj parametrem	suwaki funkcji
+📍 Zaznacz punkt	układ współrzędnych
+📐 Wizualizacja	geometria/pierwiastki
+📝 Zadanie tekstowe	sytuacja z życia
+⏱️ Speed round	szybka seria
+🧠 Wyjaśnij	„dlaczego ten wynik?”
+🔍 Oceń rozwiązanie	poprawne/błędne + dlaczego

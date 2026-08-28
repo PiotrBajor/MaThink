@@ -1,7 +1,7 @@
 import React from 'react'
 
 export interface UserProfile { nickname: string; level: number; xp: number; createdAt: string }
-export interface TaskResult { id: number; chapterId: string; difficulty: number; correct: boolean; xpEarned: number; timestamp: string }
+export interface TaskResult { id: number; chapterId: string; difficulty: number; correct: boolean; xpEarned: number; timestamp: string; lessonIndex?: number }
 export interface AppData { profile: UserProfile | null; taskResults: TaskResult[]; history: HistoryEntry[] }
 export interface HistoryEntry { id: number; timestamp: string; tab: string; input: string; result: string }
 
@@ -16,14 +16,85 @@ export function getLevelForXp(xp: number) {
 }
 export const XP_REWARDS = [10, 20, 35, 55, 80]
 
+export interface StreakDay { key: string; date: Date; active: boolean; isToday: boolean }
+export interface StreakInfo { current: number; best: number; last7: StreakDay[]; studiedToday: boolean }
+export function dayKey(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+export function getStreak(taskResults: TaskResult[]): StreakInfo {
+  const studied = new Set<string>()
+  taskResults.forEach(t => {
+    const d = new Date(t.timestamp)
+    if (!isNaN(d.getTime())) studied.add(dayKey(d))
+  })
+
+  const now = new Date()
+  const studiedToday = studied.has(dayKey(now))
+  const last7: StreakDay[] = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now); d.setDate(d.getDate() - i)
+    last7.push({ key: dayKey(d), date: d, active: studied.has(dayKey(d)), isToday: i === 0 })
+  }
+
+  // current streak: consecutive days ending today (or yesterday if today not studied yet)
+  let current = 0
+  const last = studied.has(dayKey(now)) ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
+  let cursor = new Date(last.getFullYear(), last.getMonth(), last.getDate())
+  if (studied.has(dayKey(cursor))) {
+    while (studied.has(dayKey(cursor))) { current++; cursor.setDate(cursor.getDate() - 1) }
+  }
+
+  // best streak: longest consecutive run anywhere in history
+  const sorted = [...studied].sort()
+  const MS_DAY = 86400000
+  let best = 0, run = 1
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(sorted[i - 1])
+    const cur = new Date(sorted[i])
+    const diff = Math.round((cur.getTime() - prev.getTime()) / MS_DAY)
+    if (diff === 1) run++
+    else { if (run > best) best = run; run = 1 }
+  }
+  if (sorted.length > 0 && run > best) best = run
+
+  return { current, best, last7, studiedToday }
+}
+
 export interface Chapter { id: string; title: string; icon: string; color: string; lessons: Lesson[] }
 export interface Lesson { title: string; content: LessonBlock[]; examples: string[] }
 export interface LessonBlock { type: 'text' | 'heading' | 'example' | 'rule' | 'code' | 'graph'; content: string }
-export interface Task { display: React.ReactNode; answer: number | string; options?: (string | number)[]; lessonIndex: number }
+export interface Task { display: React.ReactNode; answer: number | string; options?: (string | number)[]; lessonIndex: number; difficulty?: number }
 
 function rand(a: number, b: number) { return Math.floor(Math.random() * (b - a + 1)) + a }
 function round2(n: number) { return Math.round(n * 100) / 100 }
 function pick<T>(arr: T[], n: number) { return [...arr].sort(() => Math.random() - 0.5).slice(0, n) }
+
+// Progressive difficulty ramp: easy questions first, harder later.
+// base = the centre level (3 for a full easy→hard lesson test, or a chosen chapter-test level)
+export function ramp(count: number, base: number): number[] {
+  const lo = Math.max(1, base - 2)
+  const hi = Math.min(5, base + 2)
+  return Array.from({ length: count }, (_, i) => Math.round(lo + (hi - lo) * (i / Math.max(1, count - 1))))
+}
+
+// Build shuffled multiple-choice options with one correct answer
+function mc(correct: string | number, distractors: (string | number)[]): { options: (string | number)[]; answer: string | number } {
+  let opts = [...new Set([correct, ...distractors])]
+  for (let i = opts.length - 1; i > 0; i--) { const j = rand(0, i); [opts[i], opts[j]] = [opts[j], opts[i]] }
+  return { options: opts, answer: correct }
+}
+function near(v: number, spread = 3): number[] {
+  const opts = [] as number[]
+  let guard = 0
+  while (opts.length < 3 && guard++ < 50) {
+    const d = v + rand(-spread, spread)
+    if (d >= 1 && d !== v && !opts.includes(d)) opts.push(d)
+  }
+  return opts.length < 3 ? [v + 1, v + 2].filter((x) => x !== v) : opts
+}
 
 export const CHAPTERS: Chapter[] = [
   { id: 'addition', title: 'Addition', icon: '+', color: '#2ecc71', lessons: [
@@ -322,93 +393,325 @@ export const CHAPTERS: Chapter[] = [
 // ============ PER-LESSON TASK GENERATORS ============
 
 // --- ADDITION ---
-function genAdd_L0(d: number): Task { // Basic
-  if (d<=1) { const a=rand(1,50),b=rand(1,50); return {display:`${a} + ${b} = ?`,answer:a+b,lessonIndex:0} }
-  if (d===2) { const a=rand(10,200),b=rand(10,200); return {display:`${a} + ${b} = ?`,answer:a+b,lessonIndex:0} }
-  if (d===3) { const a=rand(100,999),b=rand(100,999); return {display:`${a} + ${b} = ?`,answer:a+b,lessonIndex:0} }
-  if (d===4) { const a=rand(1000,9999),b=rand(1000,9999); return {display:`${a} + ${b} = ?`,answer:a+b,lessonIndex:0} }
-  const a=rand(10000,99999),b=rand(10000,99999); return {display:`${a} + ${b} = ?`,answer:a+b,lessonIndex:0}
+function genAdd_L0(d: number): Task {
+  const t = rand(0, 5)
+  if (t === 0) { // compute
+    const r = d<=1?50 : d===2?200 : d===3?999 : d===4?9999 : 99999
+    const a=rand(1,r),b=rand(1,r),s=a+b
+    return {display:`${a} + ${b} = ?`,answer:s,lessonIndex:0}
+  }
+  if (t === 1) { // fill the gap
+    const r = d<=2?100 : d<=4?1000 : 100000
+    const a=rand(1,r),b=rand(1,r)
+    return {display:`${a} + ? = ${a+b}`,answer:b,lessonIndex:0}
+  }
+  if (t === 2) { // estimate MC
+    const s = d<=1 ? 10 : d<=3 ? 100 : 1000
+    const a = rand(2,50)*s, b = rand(2,50)*s
+    const m = mc(a+b, [(a+b)-s, (a+b)+s, (a+b)+2*s])
+    return { display: `About how much is ${a} + ${b}? (estimate)`, options: m.options, answer: m.answer, lessonIndex: 0 }
+  }
+  if (t === 3) { // series combo (chain)
+    const scale = d<=2 ? 1 : d<=4 ? 10 : 100
+    const adds = [rand(10,50)*scale, rand(10,50)*scale]
+    if (d >= 3) adds.push(rand(10,50)*scale)
+    if (d >= 5) adds.push(rand(100,500)*scale)
+    const start = rand(10,50)*scale
+    const total = start + adds.reduce((x,y)=>x+y,0)
+    let disp = `${start} + ${adds[0]}`
+    for (let i=1;i<adds.length;i++) disp += ` \u2192 + ${adds[i]}`
+    disp += ' \u2192 ?'
+    return { display: disp, answer: total, lessonIndex: 0 }
+  }
+  if (t === 4) { // word problem
+    const a = rand(10,500)*(d===5?10:1), b = rand(10,500)*(d===5?10:1)
+    const cases = [
+      `Kuba has ${a} zł. His grandmother gives him ${b} zł. How much does Kuba have now?`,
+      `A basket has ${a} apples and another basket has ${b}. How many apples are there altogether?`,
+      `Sara solved ${a} tasks on Monday and ${b} on Tuesday. How many in total?`,
+    ]
+    return { display: cases[rand(0, cases.length-1)], answer: a+b, lessonIndex: 0 }
+  }
+  // find the error: check a claimed result, or correct a wrong one
+  const r = d<=2 ? 50 : d<=4 ? 999 : 99999
+  const a = rand(1,r), b = rand(1,r), correct = a+b
+  if (rand(0,1) === 0) {
+    const claim = correct + Math.max(1, Math.round(correct*0.1))
+    return { display: `A student wrote ${a} + ${b} = ${claim}, but it is wrong. Give the correct result?`, answer: correct, lessonIndex: 0 }
+  }
+  const claim2 = rand(0,1) === 0 ? correct : correct + Math.max(1, Math.round(correct*0.1))
+  return { display: `Check: ${a} + ${b} = ${claim2} — is this correct?`, options: ['True','False'], answer: claim2 === correct ? 'True' : 'False', lessonIndex: 0 }
 }
-function genAdd_L1(d: number): Task { // Decimals
-  if (d<=1) { const a=round2(rand(1,50)+rand(1,9)/10),b=round2(rand(1,50)+rand(1,9)/10); return {display:`${a} + ${b} = ?`,answer:round2(a+b),lessonIndex:1} }
-  if (d<=3) { const a=round2(rand(1,200)+rand(10,99)/100),b=round2(rand(1,200)+rand(10,99)/100); return {display:`${a} + ${b} = ?`,answer:round2(a+b),lessonIndex:1} }
-  const a=round2(rand(10,999)+rand(1,99)/100),b=round2(rand(10,999)+rand(1,99)/100)
-  return {display:`${a} + ${b} = ?`,answer:round2(a+b),lessonIndex:1}
+function genAdd_L1(d: number): Task {
+  const t = rand(0, 3)
+  const mk = () => d<=1 ? round2(rand(1,50)+rand(1,9)/10) : d<=3 ? round2(rand(1,200)+rand(10,99)/100) : round2(rand(10,999)+rand(1,99)/100)
+  if (t === 0) { const a=mk(),b=mk(); return {display:`${a} + ${b} = ?`,answer:round2(a+b),lessonIndex:1} }
+  if (t === 1) { // money word
+    const p = mk(), q = mk()
+    const cases = [
+      `You buy bread for ${p} zł and milk for ${q} zł. What is the total cost?`,
+      `A notebook costs ${p} zł and a pen costs ${q} zł. How much together?`,
+    ]
+    return { display: cases[rand(0,1)], answer: round2(p+q), lessonIndex: 1 }
+  }
+  if (t === 2) { const a=mk(),b=mk(); return {display:`${a} + ? = ${round2(a+b)}`,answer:round2(b),lessonIndex:1} }
+  // chain of decimals
+  const start = round2(rand(1,20)+rand(1,9)/10)
+  const adds = [round2(rand(1,10)+rand(1,9)/10), round2(rand(1,10)+rand(1,9)/10)]
+  if (d >= 3) adds.push(round2(rand(1,50)+rand(1,9)/10))
+  const total = round2(start + adds.reduce((x,y)=>x+y,0))
+  let disp = `${start} + ${adds[0]}`
+  for (let i=1;i<adds.length;i++) disp += ` \u2192 + ${adds[i]}`
+  disp += ' \u2192 ?'
+  return { display: disp, answer: total, lessonIndex: 1 }
 }
-function genAdd_L2(d: number): Task { // Negatives
-  if (d<=1) { const b=rand(1,30),a=b+rand(1,30); return {display:`${a} + (-${b}) = ?`,answer:a-b,lessonIndex:2} }
-  if (d===2) { const a=rand(-30,-1),b=rand(-30,-1); return {display:`(${a}) + (${b}) = ?`,answer:a+b,lessonIndex:2} }
-  if (d===3) { const a=rand(-100,-1),b=rand(1,100); return {display:`(${a}) + ${b} = ?`,answer:a+b,lessonIndex:2} }
-  if (d===4) { const a=rand(-500,-10),b=rand(-500,-10); return {display:`(${a}) + (${b}) = ?`,answer:a+b,lessonIndex:2} }
-  const a=rand(-1000,-1),b=rand(-1000,-1); return {display:`(${a}) + (${b}) = ?`,answer:a+b,lessonIndex:2}
+function genAdd_L2(d: number): Task {
+  const t = rand(0, 4)
+  if (t === 0) {
+    if (d<=1) { const b=rand(1,30),a=b+rand(1,30); return {display:`${a} + (-${b}) = ?`,answer:a-b,lessonIndex:2} }
+    if (d===2) { const a=rand(-30,-1),b=rand(-30,-1); return {display:`(${a}) + (${b}) = ?`,answer:a+b,lessonIndex:2} }
+    if (d===3) { const a=rand(-100,-1),b=rand(1,100); return {display:`(${a}) + ${b} = ?`,answer:a+b,lessonIndex:2} }
+    const a=rand(-500,-1),b=rand(-500,-1); return {display:`(${a}) + (${b}) = ?`,answer:a+b,lessonIndex:2}
+  }
+  if (t === 1) { // temperature word problem
+    const t1 = -rand(1,20), t2 = rand(1,30)
+    return { display: `Morning: ${t1}\u00B0C, afternoon: ${t2}\u00B0C. By how many degrees did it warm up?`, answer: t2 - t1, lessonIndex: 2 }
+  }
+  if (t === 2) { // fill the gap with negatives
+    const a = -rand(1,50), s = rand(-100,100)
+    return { display: `(${a}) + ? = ${s}`, answer: s - a, lessonIndex: 2 }
+  }
+  if (t === 3) { // debt word problem
+    const owes = rand(1,50)*(d>=4?10:1), more = rand(1,50)*(d>=4?10:1)
+    return { display: `You owe ${owes} zł and borrow ${more} zł more. What is your balance (negative = in debt)?`, answer: -(owes+more), lessonIndex: 2 }
+  }
+  const a2 = -rand(10,40), b2 = rand(-40,40), correct = a2+b2
+  const shown = correct + (rand(0,1)===0 ? rand(2,10) : -rand(2,10))
+  return { display: `Check: (${a2}) + (${b2}) = ${shown} — is this correct?`, options: ['True','False'], answer: shown === correct ? 'True' : 'False', lessonIndex: 2 }
 }
 
 // --- SUBTRACTION ---
+const TOP: number[] = [30, 100, 500, 5000, 50000]
+function subWord(a: number, b: number): string {
+  const cases = [
+    `You have ${a} zł and spend ${b} zł. How much is left?`,
+    `A bus carries ${a} passengers and ${b} get off. How many remain?`,
+    `Team A scored ${a} points, team B scored ${b}. What is the difference?`,
+  ]
+  return cases[rand(0, cases.length - 1)]
+}
 function genSub_L0(d: number): Task {
-  if (d<=1) { const b=rand(1,30),a=b+rand(0,30); return {display:`${a} - ${b} = ?`,answer:a-b,lessonIndex:0} }
-  if (d===2) { const b=rand(10,100),a=b+rand(1,100); return {display:`${a} - ${b} = ?`,answer:a-b,lessonIndex:0} }
-  if (d===3) { const b=rand(100,500),a=b+rand(100,500); return {display:`${a} - ${b} = ?`,answer:a-b,lessonIndex:0} }
-  if (d===4) { const b=rand(1000,5000),a=b+rand(1000,5000); return {display:`${a} - ${b} = ?`,answer:a-b,lessonIndex:0} }
-  const b=rand(5000,50000),a=b+rand(5000,50000); return {display:`${a} - ${b} = ?`,answer:a-b,lessonIndex:0}
+  const t = rand(0, 4)
+  if (t === 0) {
+    const b=rand(1,TOP[Math.min(d-1,4)]), a=b+rand(1,TOP[Math.min(d-1,4)])
+    return { display: `${a} - ${b} = ?`, answer: a-b, lessonIndex: 0 }
+  }
+  if (t === 1) { // fill the gap
+    const b=rand(1,TOP[Math.min(d-1,4)]), a=b+rand(1,TOP[Math.min(d-1,4)])
+    return { display: `${a} - ? = ${a-b}`, answer: b, lessonIndex: 0 }
+  }
+  if (t === 2) { // how many more to a target
+    const target = [100, 200, 500, 1000, 5000][Math.min(d-1,4)]
+    const have = rand(1, target - 1)
+    return { display: `You have ${have} points. How many more do you need to reach ${target}?`, answer: target - have, lessonIndex: 0 }
+  }
+  if (t === 3) { // word problem
+    const b=rand(10,500), a=b+rand(1,300)
+    return { display: subWord(a, b), answer: a-b, lessonIndex: 0 }
+  }
+  // estimate MC
+  const s = d<=1 ? 10 : d<=3 ? 100 : 1000
+  const a = rand(2,50)*s, b = rand(1,49)*s, diff = a-b
+  const m = mc(diff, [diff-s, diff+s, diff+2*s])
+  return { display: `About how much is ${a} - ${b}? (estimate)`, options: m.options, answer: m.answer, lessonIndex: 0 }
 }
-function genSub_L1(d: number): Task { // Borrowing
-  if (d<=1) { const b=rand(11,49),a=b+rand(12,51); return {display:`${a} - ${b} = ?`,answer:a-b,lessonIndex:1} }
-  if (d===2) { const b=rand(101,499),a=b+rand(101,499); return {display:`${a} - ${b} = ?`,answer:a-b,lessonIndex:1} }
-  if (d===3) { const b=rand(1001,4999),a=b+rand(1001,4999); return {display:`${a} - ${b} = ?`,answer:a-b,lessonIndex:1} }
-  if (d===4) { const b=rand(5001,49999),a=b+rand(5001,49999); return {display:`${a} - ${b} = ?`,answer:a-b,lessonIndex:1} }
-  const b=rand(10001,99999),a=b+rand(10001,99999); return {display:`${a} - ${b} = ?`,answer:a-b,lessonIndex:1}
+function genSub_L1(d: number): Task {
+  const t = rand(0, 3)
+  if (t === 0) {
+    const b=rand(11,99), a=b+rand(12,151); return { display: `${a} - ${b} = ?`, answer: a-b, lessonIndex: 1 }
+  }
+  if (t === 1) { // correct a wrong result
+    const b=rand(10,4999), a=b+rand(10,4999), correct=a-b
+    const off = Math.max(1, Math.round(correct*0.1))
+    const shown = correct + (rand(0,1)===0 ? off : -off)
+    return { display: `A student wrote ${a} - ${b} = ${shown}, which is WRONG. Give the correct result?`, answer: correct, lessonIndex: 1 }
+  }
+  if (t === 2) { // recover the hidden digit
+    const o = rand(1,8), u = rand(1,9), t2 = rand(0,9)
+    const b = o*100 + t2*10 + u
+    const a = b + rand(100, 500)
+    const res = a - b
+    return { display: `Recover the hidden digit: ${a} - ${o}?${u} = ${res}. Which digit is hidden in \u201C${o}?${u}\u201D?`, answer: t2, lessonIndex: 1 }
+  }
+  // chain of subtractions
+  const scale = d<=2 ? 1 : d<=4 ? 10 : 100
+  const subs = [rand(10,40)*scale, rand(10,40)*scale]
+  const total = subs.reduce((x,y)=>x+y,0)
+  const start = rand(50,250)*scale + total
+  let disp = `Start at ${start}. Subtract ${subs[0]}`
+  for (let i=1;i<subs.length;i++) disp += `, then ${subs[i]}`
+  disp += ' \u2192 ?'
+  return { display: disp, answer: start - total, lessonIndex: 1 }
 }
-function genSub_L2(d: number): Task { // Decimals
-  if (d<=1) { const b=round2(rand(1,30)+rand(1,9)/10),a=round2(b+round2(rand(1,30)+rand(1,9)/10)); return {display:`${a} - ${b} = ?`,answer:round2(a-b),lessonIndex:2} }
-  if (d<=3) { const b=round2(rand(1,200)+rand(10,99)/100),a=round2(b+rand(10,200)+rand(1,99)/100); return {display:`${a} - ${b} = ?`,answer:round2(a-b),lessonIndex:2} }
-  const b=round2(rand(10,500)+rand(1,99)/100),a=round2(b+rand(10,500)+rand(1,99)/100)
-  return {display:`${a} - ${b} = ?`,answer:round2(a-b),lessonIndex:2}
+function genSub_L2(d: number): Task {
+  const t = rand(0, 3)
+  const mkB = () => round2(rand(1,200)+rand(1,99)/100)
+  const mkA = () => round2(rand(3,500)+rand(1,99)/100)
+  if (t === 0) { const b=mkB(), a=round2(b+mkA()); return {display:`${a} - ${b} = ?`,answer:round2(a-b),lessonIndex:2} }
+  if (t === 1) { // money change
+    const b=mkB(), a=round2(b+rand(1,100)+rand(1,9)/10)
+    return { display: `You have ${a} zł and buy a book for ${b} zł. How much change do you get?`, answer: round2(a-b), lessonIndex: 2 }
+  }
+  if (t === 2) { const b=mkB(), a=round2(b+mkA()); return {display:`${a} - ? = ${round2(a-b)}`,answer:round2(b),lessonIndex:2} }
+  // compare the results of two differences
+  const big = round2(rand(5,30)+rand(1,9)/10)
+  const small = round2(big - rand(1,9) - rand(1,9)/10)
+  const d1 = round2(big + rand(2,12)+rand(1,9)/10), r1 = round2(d1 - big)
+  const d2 = round2(small + rand(2,12)+rand(1,9)/10), r2 = round2(d2 - small)
+  return { display: `How much bigger is the result of ${d1} - ${r1} than the result of ${d2} - ${r2}?`, answer: round2(big - small), lessonIndex: 2 }
 }
 
 // --- MULTIPLICATION ---
-function genMul_L0(d: number): Task { // Times tables
-  if (d<=1) { const a=rand(2,10),b=rand(2,10); return {display:`${a} \u00D7 ${b} = ?`,answer:a*b,lessonIndex:0} }
-  if (d===2) { const a=rand(2,12),b=rand(2,12); return {display:`${a} \u00D7 ${b} = ?`,answer:a*b,lessonIndex:0} }
-  if (d===3) { const a=rand(5,20),b=rand(5,20); return {display:`${a} \u00D7 ${b} = ?`,answer:a*b,lessonIndex:0} }
-  if (d===4) { const a=rand(10,50),b=rand(2,15); return {display:`${a} \u00D7 ${b} = ?`,answer:a*b,lessonIndex:0} }
-  const a=rand(20,100),b=rand(2,20); return {display:`${a} \u00D7 ${b} = ?`,answer:a*b,lessonIndex:0}
+function genMul_L0(d: number): Task {
+  const t = rand(0, 5)
+  if (t === 0) {
+    let a: number, b: number
+    if (d<=1) { a=rand(2,10); b=rand(2,10) } else if (d===2) { a=rand(2,12); b=rand(2,12) } else if (d===3) { a=rand(5,20); b=rand(5,20) } else if (d===4) { a=rand(10,50); b=rand(2,15) } else { a=rand(20,100); b=rand(2,20) }
+    return { display: `${a} \u00D7 ${b} = ?`, answer: a*b, lessonIndex: 0 }
+  }
+  if (t === 1) { // missing factor
+    const b=rand(2,12), a=rand(2,12)
+    return { display: `? \u00D7 ${b} = ${a*b}`, answer: a, lessonIndex: 0 }
+  }
+  if (t === 2) { // grouping word problem
+    const rows = rand(2,9), cols = rand(2,9)
+    return { display: `You arrange ${rows} rows with ${cols} objects in each row. How many objects are there altogether?`, answer: rows*cols, lessonIndex: 0 }
+  }
+  if (t === 3) { // which expression gives the product
+    const a=rand(2,12), b=rand(2,12), prod=a*b
+    const m = mc(`${a} \u00D7 ${b}`, [`${a+1} \u00D7 ${b}`, `${a} \u00D7 ${b+1}`, `${a+1} \u00D7 ${b-1>=2 ? b-1 : b+2}`])
+    return { display: `Which multiplication gives ${prod}?`, options: m.options, answer: m.answer, lessonIndex: 0 }
+  }
+  if (t === 4) { // estimate MC
+    const a = rand(2,9)*10, b = rand(2,9), correct = a*b
+    const m = mc(correct, [Math.round(correct*1.2), Math.round(correct*0.8), Math.round(correct*2)])
+    return { display: `About how much is ${a} \u00D7 ${b}? (estimate)`, options: m.options, answer: m.answer, lessonIndex: 0 }
+  }
+  // tickets word problem
+  const n = rand(2,9), p = rand(5,30)
+  return { display: `${n} tickets cost ${p} zł each. What is the total cost?`, answer: n*p, lessonIndex: 0 }
 }
-function genMul_L1(d: number): Task { // Decimals
-  if (d<=1) { const a=round2(rand(1,20)+rand(1,9)/10),b=rand(2,9); return {display:`${a} \u00D7 ${b} = ?`,answer:round2(a*b),lessonIndex:1} }
-  if (d<=3) { const a=round2(rand(1,50)+rand(1,9)/10),b=round2(rand(1,20)+rand(1,9)/10); return {display:`${a} \u00D7 ${b} = ?`,answer:round2(a*b),lessonIndex:1} }
-  const a=round2(rand(10,100)+rand(1,99)/100),b=round2(rand(1,50)+rand(1,99)/100)
-  return {display:`${a} \u00D7 ${b} = ?`,answer:round2(a*b),lessonIndex:1}
+function genMul_L1(d: number): Task {
+  const t = rand(0, 3)
+  const mk = () => d<=1 ? round2(rand(1,20)+rand(1,9)/10) : d<=3 ? round2(rand(1,50)+rand(1,9)/10) : round2(rand(10,100)+rand(1,99)/100)
+  if (t === 0) { const a=mk(), b=rand(2,9); return {display:`${a} \u00D7 ${b} = ?`,answer:round2(a*b),lessonIndex:1} }
+  if (t === 1) { // money word
+    const p=mk(), kg=rand(1,9)
+    return { display: `${kg} kg of apples cost ${p} zł per kg. What do you pay in total?`, answer: round2(p*kg), lessonIndex: 1 }
+  }
+  if (t === 2) { const a=mk(), b=rand(2,9); return {display:`${a} \u00D7 ? = ${round2(a*b)}`,answer:round2(b),lessonIndex:1} }
+  const a=mk(), b=rand(2,9), prod=round2(a*b)
+  const m = mc(`${a} \u00D7 ${b}`, [`${round2(a*1.1).toFixed(1)} \u00D7 ${b}`, `${a} \u00D7 ${b+1}`, `${round2(a*0.9).toFixed(1)} \u00D7 ${b}`])
+  return { display: `Which multiplication gives ${prod}?`, options: m.options, answer: m.answer, lessonIndex: 1 }
 }
-function genMul_L2(d: number): Task { // Powers
-  const makeDisp = (base: number, exp: number) =>
-    React.createElement(React.Fragment, null, base, React.createElement('sup', null, String(exp)), ' = ?')
-  if (d<=1) { const base=rand(2,5),exp=rand(2,3); return {display:makeDisp(base,exp),answer:Math.pow(base,exp),lessonIndex:2} }
-  if (d===2) { const base=rand(2,8),exp=rand(2,4); return {display:makeDisp(base,exp),answer:Math.pow(base,exp),lessonIndex:2} }
-  if (d===3) { const base=rand(2,10),exp=rand(2,5); return {display:makeDisp(base,exp),answer:Math.pow(base,exp),lessonIndex:2} }
-  if (d===4) { const base=rand(2,12),exp=rand(2,6); return {display:makeDisp(base,exp),answer:Math.pow(base,exp),lessonIndex:2} }
-  const base=rand(2,15),exp=rand(2,7); return {display:makeDisp(base,exp),answer:Math.pow(base,exp),lessonIndex:2}
+function genMul_L2(d: number): Task {
+  const sup2 = (n: number) => React.createElement('sup', null, String(n))
+  const t = rand(0, 4)
+  if (t === 0) {
+    let base: number, exp: number
+    if (d<=1) { base=rand(2,5); exp=rand(2,3) } else if (d===2) { base=rand(2,8); exp=rand(2,4) } else if (d===3) { base=rand(2,10); exp=rand(2,5) } else if (d===4) { base=rand(2,12); exp=rand(2,6) } else { base=rand(2,15); exp=rand(2,7) }
+    return { display: React.createElement(React.Fragment, null, base, sup2(exp), ' = ?'), answer: Math.pow(base,exp), lessonIndex: 2 }
+  }
+  if (t === 1) { // missing exponent MC
+    const base = rand(2,10), exp = rand(2,8)
+    const m = mc(exp, near(exp, 2))
+    const disp = React.createElement(React.Fragment, null, base, '\u1D4F = ', Math.pow(base, exp), ' \u2192 exponent ?')
+    return { display: disp, options: m.options, answer: m.answer, lessonIndex: 2 }
+  }
+  if (t === 2) { // square area word (bridges to roots)
+    const n = rand(2,20)
+    return { display: `A square has area ${n*n} cm\u00B2. How long is its side?`, answer: n, lessonIndex: 2 }
+  }
+  if (t === 3) { // power properties MC
+    const prop = rand(0,2)
+    if (prop === 0) { const m = mc(1, [0, 2, 10]); return { display: React.createElement(React.Fragment, null, 'What is 7', sup2(0), '?'), options: m.options, answer: m.answer, lessonIndex: 2 } }
+    if (prop === 1) { const m = mc(7, [1, 0, 49]); return { display: React.createElement(React.Fragment, null, 'What is 7', sup2(1), '?'), options: m.options, answer: m.answer, lessonIndex: 2 } }
+    const base = rand(2,9), m = mc(Math.pow(base,3), near(Math.pow(base,3), 20))
+    return { display: React.createElement(React.Fragment, null, 'What is ', base, sup2(3), '?'), options: m.options, answer: m.answer, lessonIndex: 2 }
+  }
+  // find the error
+  const base = rand(2,10), exp = rand(2,5), correct = Math.pow(base,exp)
+  const off = Math.max(2, Math.round(correct*0.2))
+  const shown = correct + (rand(0,1)===0 ? off : -off)
+  return { display: React.createElement(React.Fragment, null, 'Check: ', base, sup2(exp), ' = ', Math.max(1, shown), '. Correct?'), options: ['True','False'], answer: shown === correct ? 'True' : 'False', lessonIndex: 2 }
 }
 
 // --- DIVISION ---
 function genDiv_L0(d: number): Task {
-  if (d<=1) { const b=rand(2,10),ans=rand(2,10),a=b*ans; return {display:`${a} \u00F7 ${b} = ?`,answer:ans,lessonIndex:0} }
-  if (d===2) { const b=rand(2,12),ans=rand(2,20),a=b*ans; return {display:`${a} \u00F7 ${b} = ?`,answer:ans,lessonIndex:0} }
-  if (d===3) { const b=rand(2,20),ans=rand(5,50),a=b*ans; return {display:`${a} \u00F7 ${b} = ?`,answer:ans,lessonIndex:0} }
-  if (d===4) { const b=rand(5,50),ans=rand(10,100),a=b*ans; return {display:`${a} \u00F7 ${b} = ?`,answer:ans,lessonIndex:0} }
-  const b=rand(5,100),ans=rand(10,200),a=b*ans; return {display:`${a} \u00F7 ${b} = ?`,answer:ans,lessonIndex:0}
+  const t = rand(0, 5)
+  if (t === 0) {
+    let b: number, ans: number, a: number
+    if (d<=1) { b=rand(2,10); ans=rand(2,10); a=b*ans } else if (d===2) { b=rand(2,12); ans=rand(2,20); a=b*ans } else if (d===3) { b=rand(2,20); ans=rand(5,50); a=b*ans } else if (d===4) { b=rand(5,50); ans=rand(10,100); a=b*ans } else { b=rand(5,100); ans=rand(10,200); a=b*ans }
+    return { display: `${a} \u00F7 ${b} = ?`, answer: ans, lessonIndex: 0 }
+  }
+  if (t === 1) { // missing dividend
+    const b=rand(2,12), ans=rand(2,20), a=b*ans
+    return { display: `? \u00F7 ${b} = ${ans}`, answer: a, lessonIndex: 0 }
+  }
+  if (t === 2) { // grouping word problem
+    const k = rand(2,9), q = rand(2,12)
+    return { display: `${k*q} candies are packed into bags of ${k}. How many bags do you get?`, answer: q, lessonIndex: 0 }
+  }
+  if (t === 3) { // can you share equally?
+    const k = rand(2,9), q = rand(3,12)
+    const even = rand(0,1) === 0
+    const n = even ? k*q : k*q + 1
+    return { display: `Can ${n} items be split into ${k} equal whole-number groups?`, options: ['Yes','No'], answer: even ? 'Yes' : 'No', lessonIndex: 0 }
+  }
+  if (t === 4) { // part of quotient & remainder
+    const k = rand(3,9), q = rand(3,12), r = rand(1,k-1), n = k*q + r
+    return { display: `${n} \u00F7 ${k} leaves a remainder of ?`, answer: r, lessonIndex: 0 }
+  }
+  // money split
+  const p = rand(2,10), total = p*rand(10,50)
+  return { display: `${total} zł is split equally among ${p} people. How much does each person get?`, answer: total/p, lessonIndex: 0 }
 }
-function genDiv_L1(d: number): Task { // Decimals
-  if (d<=1) { const b=rand(2,9),ans=round2(rand(2,15)+rand(1,9)/10),a=round2(b*ans); return {display:`${a} \u00F7 ${b} = ?`,answer:ans,lessonIndex:1} }
-  if (d<=3) { const b=rand(2,12),ans=round2(rand(2,50)+rand(1,9)/10),a=round2(b*ans); return {display:`${a} \u00F7 ${b} = ?`,answer:ans,lessonIndex:1} }
-  const b=rand(2,20),ans=round2(rand(5,100)+rand(1,99)/100),a=round2(b*ans)
-  return {display:`${a} \u00F7 ${b} = ?`,answer:ans,lessonIndex:1}
+function genDiv_L1(d: number): Task {
+  const t = rand(0, 4)
+  const mk = () => round2(rand(2,15)+rand(1,9)/10)
+  if (t === 0) { const b=rand(2,9), ans=mk(), a=round2(b*ans); return {display:`${a} \u00F7 ${b} = ?`,answer:ans,lessonIndex:1} }
+  if (t === 1) { // money split decimal
+    const p = rand(2,8), each = round2(rand(5,40)+rand(1,9)/10), total = round2(p*each)
+    return { display: `${total} zł is split equally among ${p} people. How much does each get?`, answer: each, lessonIndex: 1 }
+  }
+  if (t === 2) { const b=rand(2,9), ans=mk(), a=round2(b*ans); return {display:`${a} \u00F7 ? = ${ans}`,answer:round2(b),lessonIndex:1} }
+  if (t === 3) { // price per item
+    const n = rand(2,10), each = round2(rand(5,50)+rand(1,9)/10), total = round2(each*n)
+    return { display: `${total} zł for ${n} identical items. What is the price of one item?`, answer: each, lessonIndex: 1 }
+  }
+  // verify a claimed result
+  const b=rand(2,9), ans=mk(), a=round2(b*ans)
+  const shown = round2(ans * (rand(0,1)===0 ? 1 : (rand(0,1)===0 ? 1.1 : 0.9)))
+  return { display: `Check: ${a} \u00F7 ${b} = ${shown}. Is this correct?`, options: ['True','False'], answer: shown === ans ? 'True' : 'False', lessonIndex: 1 }
 }
-function genDiv_L2(d: number): Task { // Long division
-  if (d<=1) { const b=rand(10,20),ans=rand(10,30),a=b*ans; return {display:`${a} \u00F7 ${b} = ?`,answer:ans,lessonIndex:2} }
-  if (d===2) { const b=rand(10,50),ans=rand(10,100),a=b*ans; return {display:`${a} \u00F7 ${b} = ?`,answer:ans,lessonIndex:2} }
-  if (d===3) { const b=rand(20,100),ans=rand(10,200),a=b*ans; return {display:`${a} \u00F7 ${b} = ?`,answer:ans,lessonIndex:2} }
-  if (d===4) { const b=rand(50,200),ans=rand(20,500),a=b*ans; return {display:`${a} \u00F7 ${b} = ?`,answer:ans,lessonIndex:2} }
-  const b=rand(100,500),ans=rand(10,1000),a=b*ans; return {display:`${a} \u00F7 ${b} = ?`,answer:ans,lessonIndex:2}
+function genDiv_L2(d: number): Task {
+  const t = rand(0, 3)
+  if (t === 0) {
+    let b: number, ans: number, a: number
+    if (d<=1) { b=rand(10,20); ans=rand(10,30); a=b*ans } else if (d===2) { b=rand(10,50); ans=rand(10,100); a=b*ans } else if (d===3) { b=rand(20,100); ans=rand(10,200); a=b*ans } else if (d===4) { b=rand(50,200); ans=rand(20,500); a=b*ans } else { b=rand(100,500); ans=rand(10,1000); a=b*ans }
+    return { display: `${a} \u00F7 ${b} = ?`, answer: ans, lessonIndex: 2 }
+  }
+  if (t === 1) { // distribute word problem
+    const b = rand(12,50), ans = rand(4,30)
+    return { display: `${b*ans} books are put equally onto ${b} shelves. How many books per shelf?`, answer: ans, lessonIndex: 2 }
+  }
+  if (t === 2) { // check with multiplication (inverse)
+    const b = rand(10,100), ans = rand(10,100)
+    return { display: `${b*ans} \u00F7 ${b} = ${ans}, so ${ans} \u00D7 ${b} = ?`, answer: b*ans, lessonIndex: 2 }
+  }
+  // missing divisor
+  const b = rand(10,100), ans = rand(10,200), a = b*ans
+  return { display: `${a} \u00F7 ? = ${ans}`, answer: b, lessonIndex: 2 }
 }
 
 // --- SQUARE ROOTS ---
@@ -538,14 +841,22 @@ const LN_PROBLEMS: {exp:number;diff:number}[] = [
   {exp:1000,diff:5},
 ]
 
-function genRoot_L0(d: number): Task { // Basic sqrt
+function genRoot_L0(d: number): Task {
   const bank = ROOT_BANKS[Math.min(d-1,4)]
   const e = bank[rand(0, bank.length-1)]
-  return { display: e.display, answer: e.answer, lessonIndex: 0 }
+  const t = rand(0, 2)
+  if (t === 0) return { display: e.display, answer: e.answer, lessonIndex: 0 }
+  if (t === 1) { // MC: which value
+    const m = mc(e.answer, near(e.answer, Math.max(1, Math.round(e.answer/10))))
+    return { display: e.display, options: m.options, answer: m.answer, lessonIndex: 0 }
+  }
+  // matching pair: which statement is correct?
+  const m = mc(`\u221A${e.answer*e.answer} = ${e.answer}`, near(e.answer, Math.max(1, Math.round(e.answer/10))).map(w => `\u221A${e.answer*e.answer} = ${w}`))
+  return { display: 'Which pair is correct?', options: m.options, answer: m.answer, lessonIndex: 0 }
 }
 
-function genRoot_L1(d: number): Task { // Perfect squares - identify or MC
-  const t = rand(0, 1)
+function genRoot_L1(d: number): Task {
+  const t = rand(0, 5)
   if (t === 0) {
     const ranges = [[4,225],[256,625],[676,1225],[1296,2025],[2116,3025]]
     const [lo,hi] = ranges[Math.min(d-1,4)]
@@ -554,57 +865,130 @@ function genRoot_L1(d: number): Task { // Perfect squares - identify or MC
     if (sqrt*sqrt !== n) { const s=sqrt; return { display: `What is \u221A${s*s}?`, answer: s, lessonIndex: 1 } }
     return { display: `What is \u221A${n}?`, answer: sqrt, lessonIndex: 1 }
   }
-  // MC: is it a perfect square?
-  const n = rand(4, 3500)
-  const isPerfect = Math.sqrt(n) === Math.round(Math.sqrt(n))
-  return { display: `Is ${n} a perfect square?`, options: ['Yes', 'No'], answer: isPerfect ? 'Yes' : 'No', lessonIndex: 1 }
+  if (t === 1) { // inverse: if √x = n, what is x?
+    const n = rand(2, Math.min(60, 5 + d * 11))
+    return { display: `If \u221Ax = ${n}, what is x?`, answer: n * n, lessonIndex: 1 }
+  }
+  if (t === 2) { // is it a perfect square?
+    const n = rand(4, 3500)
+    const isPerfect = Math.sqrt(n) === Math.round(Math.sqrt(n))
+    return { display: `Is ${n} a perfect square?`, options: ['Yes', 'No'], answer: isPerfect ? 'Yes' : 'No', lessonIndex: 1 }
+  }
+  if (t === 3) { // geometry: square area
+    const n = rand(2, 30)
+    return { display: `A square has area ${n*n} cm\u00B2. How long is its side?`, answer: n, lessonIndex: 1 }
+  }
+  if (t === 4) { // find the error
+    const p = [16,25,36,49,64,81,100,121,144,169,196,225][rand(0,11)]
+    const sq = Math.round(Math.sqrt(p))
+    const shown = rand(0,1) === 0 ? sq : Math.max(0, sq + (rand(0,1) === 0 ? rand(1,2) : -rand(1,2)))
+    return { display: `Check: \u221A${p} = ${shown}. Is this correct?`, options: ['True','False'], answer: shown === sq ? 'True' : 'False', lessonIndex: 1 }
+  }
+  // MC match
+  const p = [25,64,121,169,225,361][rand(0,5)]
+  const sq = Math.round(Math.sqrt(p))
+  const m = mc(sq, near(sq, Math.max(1, Math.round(sq/5))))
+  return { display: `\u221A${p} \u2192 ?`, options: m.options, answer: m.answer, lessonIndex: 1 }
 }
 
-function genRoot_L2(d: number): Task { // Estimating
+function genRoot_L2(d: number): Task {
   const ranges = [[2,250],[251,600],[601,1200],[1201,2500],[2501,5000]]
   const [lo,hi] = ranges[Math.min(d-1,4)]
+  const t = rand(0, 3)
   let n = rand(lo,hi)
   while (Math.round(Math.sqrt(n))**2 === n) n = rand(lo,hi)
-  const est = round2(Math.sqrt(n))
-  return { display: `Estimate \u221A${n} (nearest tenth) = ?`, answer: est, lessonIndex: 2 }
+  if (t === 0) {
+    return { display: `Estimate \u221A${n} (nearest tenth) = ?`, answer: round2(Math.sqrt(n)), lessonIndex: 2 }
+  }
+  if (t === 1) { // between which two numbers
+    const fl = Math.floor(Math.sqrt(n))
+    const correct = `${fl} and ${fl + 1}`
+    const opts = mc(correct, [`${fl - 1} and ${fl}`, `${fl - 2} and ${fl - 1}`, `${fl + 1} and ${fl + 2}`])
+    return { display: `\u221A${n} lies between which two whole numbers?`, options: opts.options, answer: opts.answer, lessonIndex: 2 }
+  }
+  if (t === 2) { // estimate MC
+    const est = Math.round(Math.sqrt(n))
+    const m = mc(est, near(est, 3))
+    return { display: `Which whole number is the best estimate of \u221A${n}?`, options: m.options, answer: m.answer, lessonIndex: 2 }
+  }
+  // ordering MC: which is the smallest
+  const vals = [n]
+  while (vals.length < 3) {
+    let v = rand(lo,hi)
+    while (Math.round(Math.sqrt(v))**2 === v || vals.includes(v)) v = rand(lo,hi)
+    vals.push(v)
+  }
+  const minV = [...vals].sort((x,y) => x - y)[0]
+  const m = mc(`\u221A${minV}`, vals.filter(v => v !== minV).map(v => `\u221A${v}`))
+  return { display: `Which is the smallest: \u221A${vals[0]}, \u221A${vals[1]}, \u221A${vals[2]}?`, options: m.options, answer: m.answer, lessonIndex: 2 }
 }
 
-function genLog_L0(d: number): Task { // Basic log
+function genLog_L0(d: number): Task {
+  const t = rand(0, 3)
   const filtered = LOG_PROBLEMS.filter(p => p.diff === Math.min(d, 5))
   const p = filtered[rand(0, filtered.length-1)]
-  return { display: makeLogDisp(p.base, Math.pow(p.base, p.exp)), answer: p.exp, lessonIndex: 0 }
+  if (t === 0) return { display: makeLogDisp(p.base, Math.pow(p.base, p.exp)), answer: p.exp, lessonIndex: 0 }
+  if (t === 1) { // MC
+    const m = mc(p.exp, near(p.exp, 2))
+    return { display: makeLogDisp(p.base, Math.pow(p.base, p.exp)), options: m.options, answer: m.answer, lessonIndex: 0 }
+  }
+  if (t === 2) { // inverse: log_b(x) = e → x = ?
+    const disp = React.createElement(React.Fragment, null, 'log', React.createElement('sub', null, String(p.base)), '(x) = ', p.exp, ' \u2192 x = ?')
+    return { display: disp, answer: Math.pow(p.base, p.exp), lessonIndex: 0 }
+  }
+  // missing exponent: base^x = value → exponent ?
+  const m = mc(p.exp, near(p.exp, 2))
+  const disp = React.createElement(React.Fragment, null, p.base, '\u1D4F = ', Math.pow(p.base, p.exp), ' \u2192 exponent ?')
+  return { display: disp, options: m.options, answer: m.answer, lessonIndex: 0 }
 }
 
-function genLog_L1(d: number): Task { // Log rules - compound
-  if (d <= 1) {
-    const base = rand(2,10), exp = rand(1,3)
-    return { display: `log(${Math.pow(base,exp)}) = ?`, answer: round2(Math.log10(Math.pow(base,exp))), lessonIndex: 1 }
-  }
-  if (d === 2) {
-    const base = rand(2,5), exp = rand(3,6)
-    return { display: React.createElement(React.Fragment, null, 'log', React.createElement('sub', null, String(base)), '(', React.createElement('sup', null, String(base)), React.createElement('sup', null, String(exp)), ') = ?'), answer: exp, lessonIndex: 1 }
-  }
-  if (d === 3) {
-    const base = rand(2,8), exp = rand(3,8)
+function genLog_L1(d: number): Task {
+  const t = rand(0, 4)
+  if (t === 0) {
+    if (d <= 1) {
+      const base = rand(2,10), exp = rand(1,3)
+      return { display: `log(${Math.pow(base,exp)}) = ?`, answer: round2(Math.log10(Math.pow(base,exp))), lessonIndex: 1 }
+    }
+    if (d === 2) {
+      const base = rand(2,5), exp = rand(3,6)
+      return { display: React.createElement(React.Fragment, null, 'log', React.createElement('sub', null, String(base)), '(', Math.pow(base,exp), ') = ?'), answer: exp, lessonIndex: 1 }
+    }
+    if (d === 3) { const base = rand(2,8), exp = rand(3,8); return { display: React.createElement(React.Fragment, null, 'log', React.createElement('sub', null, String(base)), '(', Math.pow(base,exp), ') = ?'), answer: exp, lessonIndex: 1 } }
+    if (d === 4) { const base = rand(3,12), exp = rand(3,6); return { display: React.createElement(React.Fragment, null, 'log', React.createElement('sub', null, String(base)), '(', Math.pow(base,exp), ') = ?'), answer: exp, lessonIndex: 1 } }
+    const base = rand(2,20), exp = rand(2,5)
     return { display: React.createElement(React.Fragment, null, 'log', React.createElement('sub', null, String(base)), '(', Math.pow(base,exp), ') = ?'), answer: exp, lessonIndex: 1 }
   }
-  if (d === 4) {
-    const base = rand(3,12), exp = rand(3,6)
-    return { display: React.createElement(React.Fragment, null, 'log', React.createElement('sub', null, String(base)), '(', Math.pow(base,exp), ') = ?'), answer: exp, lessonIndex: 1 }
+  if (t === 1) { // product rule
+    const m = mc('log(a \u00D7 b)', ['log(a) \u00D7 log(b)', 'log(a \u00F7 b)', 'log(a) \u2212 log(b)'])
+    return { display: 'log(a) + log(b) = ?', options: m.options, answer: m.answer, lessonIndex: 1 }
   }
-  const base = rand(2,20), exp = rand(2,5)
-  return { display: React.createElement(React.Fragment, null, 'log', React.createElement('sub', null, String(base)), '(', Math.pow(base,exp), ') = ?'), answer: exp, lessonIndex: 1 }
+  if (t === 2) { // quotient rule
+    const m = mc('log(a \u00F7 b)', ['log(a) + log(b)', 'log(a) \u00D7 log(b)', 'log(a + b)'])
+    return { display: 'log(a) \u2212 log(b) = ?', options: m.options, answer: m.answer, lessonIndex: 1 }
+  }
+  if (t === 3) { // power rule
+    const m = mc('n \u00D7 log(x)', ['log(x) + n', 'n + log(x)', 'log(x \u00F7 n)'])
+    return { display: 'log(x\u207F) = ?', options: m.options, answer: m.answer, lessonIndex: 1 }
+  }
+  // numeric: product rule log_b(A × B)
+  const base = rand(2,8), ea = rand(1,5), eb = rand(1,5)
+  return { display: React.createElement(React.Fragment, null, 'log', React.createElement('sub', null, String(base)), '(', Math.pow(base, ea), ' \u00D7 ', Math.pow(base, eb), ') = ?'), answer: ea + eb, lessonIndex: 1 }
 }
 
 function genLog_L2(d: number): Task { // Natural log
   const filtered = LN_PROBLEMS.filter(p => p.diff === Math.min(d, 5))
   const p = filtered[rand(0, filtered.length-1)]
-  const disp = React.createElement(React.Fragment, null, 'ln(e', React.createElement('sup', null, String(p.exp)), ') = ?')
-  return { display: disp, answer: p.exp, lessonIndex: 2 }
+  const lnDisp = (n: number, suffix: string) => React.createElement(React.Fragment, null, 'ln(e', React.createElement('sup', null, String(n)), ')', suffix)
+  const t = rand(0, 2)
+  if (t === 0) return { display: lnDisp(p.exp, ' = ?'), answer: p.exp, lessonIndex: 2 }
+  if (t === 1) { const m = mc(p.exp, near(p.exp, 2)); return { display: lnDisp(p.exp, ' = ?'), options: m.options, answer: m.answer, lessonIndex: 2 } }
+  const off = rand(1,2)
+  const shown = rand(0,1) === 0 ? p.exp : p.exp - off
+  return { display: lnDisp(p.exp, ' = ' + shown + ' \u2014 is this correct?'), options: ['True','False'], answer: shown === p.exp ? 'True' : 'False', lessonIndex: 2 }
 }
 
-function genLog_L3(d: number): Task { // Log operations: add/sub + change of base
-  const t = rand(0, 2)
+function genLog_L3(d: number): Task { // Log operations: add/sub, change of base, true/false, solve
+  const t = rand(0, 4)
   const p2 = (e: number) => Math.pow(2, e)
   const p10 = (e: number) => Math.pow(10, e)
   if (t === 0) { // add: log2(2^a) + log2(2^b)
@@ -619,74 +1003,217 @@ function genLog_L3(d: number): Task { // Log operations: add/sub + change of bas
     if (base === 0) return { display: `log\u2082(${p2(a)}) \u2212 log\u2082(${p2(b)}) = ?`, answer: a - b, lessonIndex: 3 }
     return { display: `log(${p10(a)}) \u2212 log(${p10(b)}) = ?`, answer: a - b, lessonIndex: 3 }
   }
-  // MC: change of base
-  const exp = rand(1, 6), base = rand(2, 8)
-  const value = exp
-  const wrong = [value - 2, value + 1, value + 2].map(v => Math.max(1, v))
-  const options = [...new Set([value, ...wrong])].sort((a, b) => a - b)
-  const disp = React.createElement(React.Fragment, null, 'log', React.createElement('sub', null, String(base)), '(', Math.pow(base, exp), ') = log(', Math.pow(base, exp), ') / log(', base, ') = ?')
-  return { display: disp, options, answer: value, lessonIndex: 3 }
+  if (t === 2) { // MC: change of base
+    const exp = rand(1, 6), base = rand(2, 8)
+    const value = exp
+    const wrong = [value - 2, value + 1, value + 2].map(v => Math.max(1, v))
+    const options = [...new Set([value, ...wrong])].sort((a, b) => a - b)
+    const disp = React.createElement(React.Fragment, null, 'log', React.createElement('sub', null, String(base)), '(', Math.pow(base, exp), ') = log(', Math.pow(base, exp), ') / log(', base, ') = ?')
+    return { display: disp, options, answer: value, lessonIndex: 3 }
+  }
+  if (t === 3) { // true/false
+    const base = rand(2, 8), exp = rand(1, 6)
+    const shown = rand(0, 1) === 0 ? exp : Math.max(1, exp + (rand(0, 1) === 0 ? 1 : -1))
+    const isTrue = shown === exp
+    const disp = React.createElement(React.Fragment, null, 'log', React.createElement('sub', null, String(base)), '(', Math.pow(base, exp), ') = ', shown, ' \u2014 is this correct?')
+    return { display: disp, options: ['True', 'False'], answer: isTrue ? 'True' : 'False', lessonIndex: 3 }
+  }
+  // solve: log_b(x) = e → x = ?
+  const base = rand(2, 8), e = rand(1, 8)
+  return { display: React.createElement(React.Fragment, null, 'Solve: log', React.createElement('sub', null, String(base)), '(x) = ', e, ' \u2192 x = ?'), answer: Math.pow(base, e), lessonIndex: 3 }
 }
 
 // --- EQUATIONS ---
-function genEquation_L0(d: number): Task { // One-step: x + a = b, x - a = b, a*x = b, x/a = b
-  const t = rand(0, 3)
-  if (t === 0) { const a=rand(1,30), x=rand(1,30); return {display:`x + ${a} = ${x+a} \u2192 x = ?`,answer:x,lessonIndex:0} }
-  if (t === 1) { const a=rand(1,30), x=rand(1,60); return {display:`x \u2212 ${a} = ${x-a} \u2192 x = ?`,answer:x,lessonIndex:0} }
-  if (t === 2) { const a=rand(2,15), x=rand(2,50); return {display:`${a}x = ${a*x} \u2192 x = ?`,answer:x,lessonIndex:0} }
-  const a=rand(2,12), x=rand(2,50); return {display:`x \u00F7 ${a} = ${round2(x/a)} \u2192 x = ?`,answer:x,lessonIndex:0}
+function genEquation_L0(d: number): Task {
+  const t = rand(0, 8)
+  const a=rand(1,30), x=rand(1,30)
+  if (t === 0) { return {display:`x + ${a} = ${x+a} \u2192 x = ?`,answer:x,lessonIndex:0} }
+  if (t === 1) { const y=rand(1,60); return {display:`x \u2212 ${a} = ${y-a} \u2192 x = ?`,answer:y,lessonIndex:0} }
+  if (t === 2) { const d2=rand(2,15), y=rand(2,50); return {display:`${d2}x = ${d2*y} \u2192 x = ?`,answer:y,lessonIndex:0} }
+  if (t === 3) { const d2=rand(2,12), y=rand(2,50); return {display:`x \u00F7 ${d2} = ${round2(y/d2)} \u2192 x = ?`,answer:y,lessonIndex:0} }
+  if (t === 4) { // MC
+    const m = mc(x, near(x, a))
+    return { display: `x + ${a} = ${x+a} \u2192 x = ?`, options: m.options, answer: m.answer, lessonIndex: 0 }
+  }
+  if (t === 5) { // true/false: is x the solution?
+    const some = rand(0,1) === 0 ? x : x + (rand(0,1) === 0 ? rand(1,a) : -rand(1,a))
+    const isTrue = some === x
+    return { display: `x + ${a} = ${x+a}, and x = ${Math.max(1, some)}. Correct?`, options: ['True', 'False'], answer: isTrue ? 'True' : 'False', lessonIndex: 0 }
+  }
+  if (t === 6) { // choose the next step
+    const m = mc(`Subtract ${a} from both sides`, [`Add ${a} to both sides`, `Multiply both sides by ${a}`, `Divide both sides by ${a}`])
+    return { display: `x + ${a} = ${x+a} \u2014 what is the first step?`, options: m.options, answer: m.answer, lessonIndex: 0 }
+  }
+  if (t === 7) { // build the equation MC
+    const m = mc(`x + ${a} = ${x+a}`, [`x \u2212 ${a} = ${x+a}`, `x = ${a} + ${x+a}`, `${a}x = ${x+a}`])
+    return { display: `${x} plus ${a} equals ${x+a} \u2014 which equation matches?`, options: m.options, answer: m.answer, lessonIndex: 0 }
+  }
+  // word problem
+  const m0 = rand(0,1) === 0 ? a : a + rand(5,30)
+  return { display: `Tomek has some money. After receiving ${m0} zł he has ${x + m0} zł. How much did he have at the start?`, answer: x, lessonIndex: 0 }
 }
 
-function genEquation_L1(d: number): Task { // Two-step: a*x + b = c, a*x - b = c, (x + a)*b = c
-  const t = rand(0, 2)
+function genEquation_L1(d: number): Task {
+  const t = rand(0, 5)
   if (t === 0) { const a=rand(2,12), x=rand(2,50), b=rand(1,40); return {display:`${a}x + ${b} = ${a*x+b} \u2192 x = ?`,answer:x,lessonIndex:1} }
   if (t === 1) { const a=rand(2,12), x=rand(2,50), b=rand(1,30); return {display:`${a}x \u2212 ${b} = ${a*x-b} \u2192 x = ?`,answer:x,lessonIndex:1} }
-  const b=rand(2,10), a=rand(2,15), x=rand(2,30); return {display:`(x + ${a}) \u00D7 ${b} = ${b*(x+a)} \u2192 x = ?`,answer:x,lessonIndex:1}
+  if (t === 2) { const b=rand(2,10), a=rand(2,15), x=rand(2,30); return {display:`(x + ${a}) \u00D7 ${b} = ${b*(x+a)} \u2192 x = ?`,answer:x,lessonIndex:1} }
+  if (t === 3) { // choose the next step
+    const sel = rand(0,2)
+    if (sel === 0) { const a=rand(2,12), b=rand(1,40), x=rand(2,50); const m = mc(`Subtract ${b} from both sides`, [`Add ${b} to both sides`, `Divide both sides by ${a}`, `Multiply both sides by ${b}`]); return { display: `${a}x + ${b} = ${a*x+b} \u2014 what is the first step?`, options: m.options, answer: m.answer, lessonIndex: 1 } }
+    if (sel === 1) { const a=rand(2,12), b=rand(1,30), x=rand(2,50); const m = mc(`Add ${b} to both sides`, [`Subtract ${b} from both sides`, `Divide both sides by ${a}`, `Add ${a} to both sides`]); return { display: `${a}x \u2212 ${b} = ${a*x-b} \u2014 what is the first step?`, options: m.options, answer: m.answer, lessonIndex: 1 } }
+    const a=rand(2,15), x=rand(2,30), b=rand(2,10); const m = mc(`Divide both sides by ${b}`, [`Subtract ${a} from both sides`, `Add ${b} to both sides`, `Add ${a} to both sides`]); return { display: `(x + ${a}) \u00D7 ${b} = ${b*(x+a)} \u2014 what is the first step?`, options: m.options, answer: m.answer, lessonIndex: 1 }
+  }
+  if (t === 4) { // complete the missing step
+    const a=rand(2,12), b=rand(1,40), x=rand(2,50)
+    return { display: `${a}x + ${b} = ${a*x+b} \u2192 ${a}x = ?`, answer: a*x, lessonIndex: 1 }
+  }
+  // find the wrong step
+  const a=rand(2,12), b=rand(1,30), x=rand(2,50)
+  const y = a*x-b, sum = a*x
+  const bad = sum + (rand(0,1) === 0 ? rand(2,8) : -rand(2,8))
+  const correct = `${a}x = ${sum}`, wrong = `${a}x = ${bad}`
+  const pool = [correct, wrong, `x = ${Math.round(sum/a) + 1}`, `x = ${Math.max(0, sum - a)}`]
+  const opts = pool.filter((s, i) => pool.indexOf(s) === i)
+  const m = mc(wrong, opts.filter(s => s !== wrong))
+  return { display: `Some steps for ${a}x \u2212 ${b} = ${y} are listed. Which step is WRONG?`, options: m.options, answer: m.answer, lessonIndex: 1 }
 }
 
-function genEquation_L2(d: number): Task { // Variables both sides: a*x + b = c*x + rhs (a > c)
+function genEquation_L2(d: number): Task {
+  const t = rand(0, 4)
   const a=rand(3,15), c=rand(1,a-1), b=rand(1,40), x=rand(2,50)
   const rhs = (a-c)*x + b
-  return { display: `${a}x + ${b} = ${c}x + ${rhs} \u2192 x = ?`, answer: x, lessonIndex: 2 }
+  if (t === 0) return { display: `${a}x + ${b} = ${c}x + ${rhs} \u2192 x = ?`, answer: x, lessonIndex: 2 }
+  if (t === 1) { const m = mc(x, near(x, 3)); return { display: `${a}x + ${b} = ${c}x + ${rhs} \u2192 x = ?`, options: m.options, answer: m.answer, lessonIndex: 2 } }
+  if (t === 2 && d >= 3) { // solution types
+    if (rand(0,1) === 0) return { display: `${a}x + ${b} = ${a}x + ${b} \u2014 how many solutions?`, options: ['Infinite', 'Exactly one', 'None'], answer: 'Infinite', lessonIndex: 2 }
+    return { display: `${a}x + ${b} = ${a}x + ${b + rand(1,9)} \u2014 how many solutions?`, options: ['None', 'Infinite', 'Exactly one'], answer: 'None', lessonIndex: 2 }
+  }
+  if (t === 3) { // find the wrong step
+    const sum2 = rhs - b
+    const correct2 = `${a - c}x = ${sum2}`
+    const bad2 = `${a - c}x = ${sum2 + rand(3, 9)}`
+    const m = mc(bad2, [correct2, `x = ${x + 1}`, `x = ${Math.max(1, x - 1)}`])
+    return { display: `${a}x + ${b} = ${c}x + ${rhs} \u2014 a student's next step is one of these. Which one is WRONG?`, options: m.options, answer: m.answer, lessonIndex: 2 }
+  }
+  // build the equation from words MC
+  const xx = rand(2,50), rhs2 = a*xx + b
+  const m = mc(`${a}x + ${b} = ${rhs2}`, [`${a}x \u2212 ${b} = ${rhs2}`, `${c}x + ${b} = ${rhs2}`, `${a}x = ${rhs2}`])
+  return { display: `${a} times a number, plus ${b}, equals ${rhs2}. Which equation matches?`, options: m.options, answer: m.answer, lessonIndex: 2 }
 }
 
 // --- FUNCTIONS ---
-function genFunction_L0(d: number): Task { // f(x) = ax + b, evaluate f(c)
+function genFunction_L0(d: number): Task {
   const a=rand(2,12), b=rand(1,20), c=rand(1,12)
-  return { display: `f(x) = ${a}x ${b>=0?'+':'\u2212'} ${Math.abs(b)} \u2192 f(${c}) = ?`, answer: a*c+b, lessonIndex: 0 }
+  const y = a*c+b
+  const t = rand(0, 3)
+  if (t === 0) return { display: `f(x) = ${a}x ${b>=0?'+':'\u2212'} ${Math.abs(b)} \u2192 f(${c}) = ?`, answer: y, lessonIndex: 0 }
+  if (t === 1) { // point on graph
+    const correct = `(${c}, ${y})`
+    const m = mc(correct, [`(${c+1}, ${y})`, `(${c}, ${y+1})`, `(${c-1}, ${y})`, `(${c}, ${y-1})`, `(${c+1}, ${y-1})`])
+    return { display: `f(x) = ${a}x ${b>=0?'+':'\u2212'} ${Math.abs(b)} \u2014 which point lies on the graph?`, options: m.options, answer: m.answer, lessonIndex: 0 }
+  }
+  if (t === 2) { // true/false
+    const shown = rand(0,1) === 0 ? y : y + (rand(0,1) === 0 ? rand(1,5) : -rand(1,5))
+    return { display: `f(x) = ${a}x ${b>=0?'+':'\u2212'} ${Math.abs(b)} \u2192 f(${c}) = ${shown}. Correct?`, options: ['True', 'False'], answer: shown === y ? 'True' : 'False', lessonIndex: 0 }
+  }
+  // value MC
+  const m = mc(y, near(y, 4))
+  return { display: `f(x) = ${a}x ${b>=0?'+':'\u2212'} ${Math.abs(b)} \u2192 f(${c}) = ?`, options: m.options, answer: m.answer, lessonIndex: 0 }
 }
 
-function genFunction_L1(d: number): Task { // Linear: forward or reverse
-  const t = rand(0, 1)
-  if (t === 0) { const m=rand(2,15),b=rand(-30,30), x=rand(1,15); return { display: `f(x) = ${m}x ${b>=0?'+':'\u2212'} ${Math.abs(b)} \u2192 f(${x}) = ?`, answer: m*x+b, lessonIndex: 1 } }
-  const m=rand(2,10), x=rand(2,20), b=rand(-30,30), y=m*x+b
-  return { display: `f(x) = ${m}x ${b>=0?'+':'\u2212'} ${Math.abs(b)} \u2192 f(x) = ${y} \u2192 x = ?`, answer: x, lessonIndex: 1 }
+function genFunction_L1(d: number): Task {
+  const m=rand(2,15), b2=rand(-30,30), x=rand(1,15)
+  const y = m*x+b2
+  const fs = (b: number) => `f(x) = ${m}x ${b>=0?'+':'\u2212'} ${Math.abs(b)}`
+  const t = rand(0, 6)
+  if (t === 0) return { display: `${fs(b2)} \u2192 f(${x}) = ?`, answer: y, lessonIndex: 1 }
+  if (t === 1) return { display: `${fs(b2)} \u2192 f(x) = ${y} \u2192 x = ?`, answer: x, lessonIndex: 1 }
+  if (t === 2) { const m2 = mc(x, near(x)); return { display: `${fs(b2)} \u2192 f(x) = ${y} \u2192 x = ?`, options: m2.options, answer: m2.answer, lessonIndex: 1 } }
+  if (t === 3) {
+    const correct = `(${x}, ${y})`
+    const m3 = mc(correct, [`(${x+1}, ${y})`, `(${x}, ${y+1})`, `(${x-1}, ${y})`, `(${x+1}, ${y-1})`, `(${x}, ${y-1})`])
+    return { display: `${fs(b2)} \u2014 which point lies on the graph?`, options: m3.options, answer: m3.answer, lessonIndex: 1 }
+  }
+  if (t === 4) { // y-intercept
+    const m4 = rand(2,12), b4 = rand(0,30)
+    return { display: `f(x) = ${m4}x ${b4>=0?'+':'\u2212'} ${Math.abs(b4)} \u2192 y-intercept = ?`, answer: b4, lessonIndex: 1 }
+  }
+  if (t === 5) { // which formula has slope k?
+    const k = rand(2,9)
+    const f0 = `f(x) = ${k}x + ${rand(0,5)}`
+    const arr = [
+      f0,
+      `f(x) = ${rand(1,12)}x + ${rand(0,5)}`,
+      `f(x) = ${rand(1,12)}x \u2212 ${rand(0,5)}`,
+      `f(x) = ${rand(1,12)}x + ${rand(0,5)}`,
+    ]
+    const m = mc(f0, arr.filter(s => s !== f0))
+    return { display: `Which formula has slope ${k}?`, options: m.options, answer: m.answer, lessonIndex: 1 }
+  }
+  // taxi word problem
+  const base = rand(5,12), per = rand(2,6), km = rand(2,12)
+  return { display: `A taxi charges ${base} zł plus ${per} zł per kilometre. How much for ${km} km?`, answer: base + per*km, lessonIndex: 1 }
 }
 
-function genFunction_L2(d: number): Task { // Quadratic: evaluate, direction MC, vertex fill, root fill
-  const t = rand(0, 4)
+function genFunction_L2(d: number): Task {
+  const t = rand(0, 6)
   if (t === 0) { const b=rand(0,50), x=rand(1,12); return { display: `f(x) = x\u00B2 ${b>=0?'+':'\u2212'} ${Math.abs(b)} \u2192 f(${x}) = ?`, answer: x*x+b, lessonIndex: 2 } }
-  if (t === 1) { const a=rand(2,8), c=rand(0,30), x=rand(1,10); return { display: `f(x) = ${a}x\u00B2 ${c>=0?'+':'\u2212'} ${Math.abs(c)} \u2192 f(${x}) = ?`, answer: a*x*x+c, lessonIndex: 2 } }
+  if (t === 1) { const a=rand(2,8), c2=rand(0,30), x=rand(1,10); return { display: `f(x) = ${a}x\u00B2 ${c2>=0?'+':'\u2212'} ${Math.abs(c2)} \u2192 f(${x}) = ?`, answer: a*x*x+c2, lessonIndex: 2 } }
   if (t === 2) { const x=rand(1,15); return { display: `f(x) = x\u00B2 \u2192 f(${x}) = ?`, answer: x*x, lessonIndex: 2 } }
-  if (t === 3) { // MC: direction of parabola
+  if (t === 3) { // direction of parabola
     let a = 0; while (a === 0) a = rand(-8, 8)
     const up = a > 0
-    const c = rand(0, 20)
+    const c2 = rand(0, 20)
     const sign = a > 0 ? '' : '\u2212'
-    const disp = React.createElement(React.Fragment, null, `f(x) = ${sign}${Math.abs(a)===1?'':Math.abs(a)}x\u00B2`, c>0 ? ` + ${c}` : '', ' \u2192 parabola opens...')
+    const disp = React.createElement(React.Fragment, null, `f(x) = ${sign}${Math.abs(a)===1?'':Math.abs(a)}x\u00B2`, c2>0 ? ` + ${c2}` : '', ' \u2192 parabola opens...')
     return { display: disp, options: ['Up', 'Down'], answer: up ? 'Up' : 'Down', lessonIndex: 2 }
   }
-  // vertex fill: f(x) = (x - p)^2 + q → vertex (p, q)
-  const p = rand(1, 12), q = rand(1, 60)
-  const disp = React.createElement(React.Fragment, null, 'f(x) = (x \u2212 ', p, ')\u00B2 + ', q, ' \u2192 vertex (', p, ', ?)')
-  return { display: disp, answer: q, lessonIndex: 2 }
+  if (t === 4) { // vertex, second coordinate
+    const p = rand(1, 12), q = rand(1, 60)
+    const disp = React.createElement(React.Fragment, null, 'f(x) = (x \u2212 ', p, ')\u00B2 + ', q, ' \u2192 vertex (', p, ', ?)')
+    return { display: disp, answer: q, lessonIndex: 2 }
+  }
+  if (t === 5) { // vertex as MC
+    const p = rand(1, 12), q = rand(1, 60)
+    const m = mc(`(${p}, ${q})`, [`(${q}, ${p})`, `(${-p}, ${q})`, `(${p}, ${-q})`])
+    return { display: React.createElement(React.Fragment, null, 'f(x) = (x \u2212 ', p, ')\u00B2 + ', q, ' \u2192 vertex = ?'), options: m.options, answer: m.answer, lessonIndex: 2 }
+  }
+  // roots from factored form
+  const r1 = rand(1, 10), r2 = rand(2, 12)
+  const a = rand(1, 3)
+  const correct = `${r1} and ${r2}`
+  const m = mc(correct, [`${r2} and ${r1}`, `${r1 + 1} and ${r2}`, `${r1} and ${-r2}`])
+  return { display: `f(x) = ${a}(x \u2212 ${r1})(x \u2212 ${r2}) \u2192 the roots are?`, options: m.options, answer: m.answer, lessonIndex: 2 }
 }
 
-function genFunction_L3(d: number): Task { // Logarithmic function: evaluate f(b^e)
+function genFunction_L3(d: number): Task {
   const b = rand(2, 6), e = rand(1, 6)
   const subd = '\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089'
-  const disp = React.createElement(React.Fragment, null, 'f(x) = log', subd[b], '(x) \u2192 f(', Math.pow(b, e), ') = ?')
-  return { display: disp, answer: e, lessonIndex: 3 }
+  const t = rand(0, 4)
+  if (t === 0) {
+    const disp = React.createElement(React.Fragment, null, 'f(x) = log', subd[b], '(x) \u2192 f(', Math.pow(b, e), ') = ?')
+    return { display: disp, answer: e, lessonIndex: 3 }
+  }
+  if (t === 1) { // f(1) = ?
+    const m = mc(0, [1, b, 2])
+    const disp = React.createElement(React.Fragment, null, 'f(x) = log', subd[b], '(x) \u2192 f(1) = ?')
+    return { display: disp, options: m.options, answer: m.answer, lessonIndex: 3 }
+  }
+  if (t === 2) { // true/false
+    const shown = rand(0,1) === 0 ? e : e + (rand(0,1) === 0 ? 1 : -1)
+    const isTrue = Math.max(1, shown) === e
+    const disp = React.createElement(React.Fragment, null, 'f(x) = log', subd[b], '(x): f(', Math.pow(b, e), ') = ', Math.max(1, shown), '. Correct?')
+    return { display: disp, options: ['True', 'False'], answer: isTrue ? 'True' : 'False', lessonIndex: 3 }
+  }
+  if (t === 3) { // domain
+    const m = mc('x > 0', ['x \u2265 0', 'x \u2260 0', 'all real x'])
+    return { display: React.createElement(React.Fragment, null, 'f(x) = log', subd[b], '(x) \u2014 what is the domain?'), options: m.options, answer: m.answer, lessonIndex: 3 }
+  }
+  // f(b) = ?
+  const m = mc(1, [b, 0, 2])
+  const disp = React.createElement(React.Fragment, null, 'f(x) = log', subd[b], '(x) \u2192 f(', b, ') = ?')
+  return { display: disp, options: m.options, answer: m.answer, lessonIndex: 3 }
 }
 
 // ============ GENERATORS MAP ============
@@ -706,16 +1233,18 @@ const LESSON_GENS: Record<string, GenFn[]> = {
 
 // ============ PUBLIC API ============
 
-export function generateLessonBatch(chapterId: string, lessonIndex: number, difficulty: number, count: number): Task[] {
+export function generateLessonBatch(chapterId: string, lessonIndex: number, count: number): Task[] {
   const gens = LESSON_GENS[chapterId]
   if (!gens || !gens[lessonIndex]) return []
   const gen = gens[lessonIndex]
+  const diffs = ramp(count, 3)
   const tasks: Task[] = []
   const used = new Set<string>()
   for (let i = 0; i < count; i++) {
     let task: Task; let attempts = 0
-    do { task = gen(difficulty); attempts++ } while (used.has(JSON.stringify(task.display)) && attempts < 100)
+    do { task = gen(diffs[i]); attempts++ } while (used.has(JSON.stringify(task.display)) && attempts < 100)
     used.add(JSON.stringify(task.display))
+    task = { ...task, difficulty: diffs[i] }
     tasks.push(task)
   }
   return tasks
@@ -724,6 +1253,7 @@ export function generateLessonBatch(chapterId: string, lessonIndex: number, diff
 export function generateChapterBatch(chapterId: string, difficulty: number, count: number): Task[] {
   const gens = LESSON_GENS[chapterId]
   if (!gens) return []
+  const diffs = ramp(count, difficulty)
   const tasks: Task[] = []
   const used = new Set<string>()
   const perLesson = Math.ceil(count / gens.length)
@@ -731,9 +1261,10 @@ export function generateChapterBatch(chapterId: string, difficulty: number, coun
   for (let li = 0; li < gens.length; li++) {
     for (let i = 0; i < perLesson && tasks.length < count; i++) {
       let task: Task; let attempts = 0
-      do { task = gens[li](difficulty); task = {...task, lessonIndex: li}; attempts++ }
+      do { task = gens[li](diffs[tasks.length]); task = {...task, lessonIndex: li}; attempts++ }
       while (used.has(JSON.stringify(task.display)) && attempts < 100)
       used.add(JSON.stringify(task.display))
+      task.difficulty = diffs[tasks.length]
       tasks.push(task)
     }
   }

@@ -178,6 +178,29 @@
   border-radius: var(--radius-sm);
 }
 
+.frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0 6px;
+}
+
+.frac-num {
+  display: inline-block;
+  padding: 0 8px 3px;
+  border-bottom: 2px solid var(--text-secondary);
+  line-height: 1.2;
+}
+
+.frac-den {
+  display: inline-block;
+  padding: 3px 8px 0;
+  line-height: 1.2;
+}
+
+.delta-graph { width: 100%; height: 270px; margin-top: 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-tertiary); overflow: hidden; }
+
 .delta-roots {
   margin-top: 16px;
   display: flex;

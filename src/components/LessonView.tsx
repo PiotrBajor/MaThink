@@ -11,7 +11,7 @@ interface Props {
   lessonContent: { type: string; content: string }[]
   lessonExamples: string[]
   onBack: () => void
-  onSolve: (result: { id: number; chapterId: string; difficulty: number; correct: boolean; xpEarned: number; timestamp: string }) => void
+  onSolve: (result: { id: number; chapterId: string; difficulty: number; correct: boolean; xpEarned: number; timestamp: string; lessonIndex: number }) => void
   onQuizActiveChange?: (active: boolean) => void
 }
 
@@ -28,6 +28,8 @@ function Rich({ text }: { text: string }) {
   return <>{parts}</>
 }
 
+const TEST_LEN = 15
+
 export default function LessonView({ chapterId, lessonIndex, chapterColor, lessonTitle, lessonContent, lessonExamples, onBack, onSolve, onQuizActiveChange }: Props) {
   const [phase, setPhase] = useState<'read' | 'quiz' | 'results'>('read')
 
@@ -35,15 +37,13 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
     setPhase(p)
     onQuizActiveChange?.(p === 'quiz')
   }
-  const [difficulty, setDifficulty] = useState(1)
   const [tasks, setTasks] = useState<Task[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [userAnswer, setUserAnswer] = useState('')
   const [answered, setAnswered] = useState<AnsweredTask[]>([])
 
-  const startQuiz = (diff: number) => {
-    setDifficulty(diff)
-    const batch = generateLessonBatch(chapterId, lessonIndex, diff, 10)
+  const startQuiz = () => {
+    const batch = generateLessonBatch(chapterId, lessonIndex, TEST_LEN)
     setTasks(batch)
     setCurrentIndex(0)
     setUserAnswer('')
@@ -62,17 +62,22 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
       if (isNaN(num) || userAnswer.trim() === '') return
       ans = num
     }
-    const correct = typeof ans === 'number' ? Math.abs(ans - Number(task.answer)) < 0.01 : ans === task.answer
-    const xp = correct ? XP_REWARDS[difficulty - 1] : 0
+    const correct = task.options
+      ? String(ans) === String(task.answer)
+      : typeof ans === 'number'
+        ? Math.abs(ans - Number(task.answer)) < 0.01
+        : ans === task.answer
+    const qd = task.difficulty ?? 1
+    const xp = correct ? XP_REWARDS[qd - 1] : 0
     const newAnswered = [...answered, { task, userAnswer: String(ans), correct }]
     setAnswered(newAnswered)
-    onSolve({ id: Date.now() + currentIndex, chapterId, difficulty, correct, xpEarned: xp, timestamp: new Date().toISOString() })
+    onSolve({ id: Date.now() + currentIndex, chapterId, difficulty: qd, correct, xpEarned: xp, timestamp: new Date().toISOString(), lessonIndex })
     if (currentIndex + 1 < tasks.length) { setCurrentIndex(prev => prev + 1); setUserAnswer('') }
     else setPhaseSafe('results')
   }
 
   const totalCorrect = answered.filter(a => a.correct).length
-  const totalXp = answered.reduce((s, a) => s + (a.correct ? XP_REWARDS[difficulty - 1] : 0), 0)
+  const totalXp = answered.reduce((s, a) => s + (a.correct ? XP_REWARDS[(a.task.difficulty ?? 1) - 1] : 0), 0)
 
   return (
     <div className="lesson-view">
@@ -104,14 +109,12 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
 
           <div className="lesson-practice-section">
             <h4>Practice this lesson</h4>
-            <p className="practice-hint">Choose a difficulty to start a 10-question quiz</p>
+            <p className="practice-hint">Starts easy and gets harder as you go</p>
             <div className="practice-diffs">
-              {[1,2,3,4,5].map(d => (
-                <button key={d} className="practice-diff-btn" onClick={() => startQuiz(d)} style={{ borderColor: chapterColor + '40' }}>
-                  <span className="pd-name">{['Easy','Medium','Hard','Expert','Master'][d-1]}</span>
-                  <span className="pd-xp">+{XP_REWARDS[d-1]} XP</span>
-                </button>
-              ))}
+              <button className="practice-diff-btn test-btn" onClick={startQuiz} style={{ borderColor: chapterColor + '40', background: chapterColor + '1a' }}>
+                <span className="pd-name">Start {TEST_LEN}-Question Test</span>
+                <span className="pd-xp">up to +{XP_REWARDS[4]} XP / question</span>
+              </button>
             </div>
           </div>
         </div>
@@ -178,7 +181,7 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
             ))}
           </div>
           <div className="results-actions">
-            <button className="btn-retry" onClick={() => startQuiz(difficulty)} style={{ background: chapterColor }}>Try Again</button>
+            <button className="btn-retry" onClick={startQuiz} style={{ background: chapterColor }}>Try Again</button>
             <button className="btn-back-chapters" onClick={() => setPhaseSafe('read')}>Back to Lesson</button>
           </div>
         </div>

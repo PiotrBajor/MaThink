@@ -8,7 +8,7 @@ import Delta from './components/Delta'
 import Tasks from './components/Tasks'
 import Chapter from './components/Chapter'
 import Settings from './components/Settings'
-import { AppData, UserProfile, TaskResult, HistoryEntry, getLevelForXp } from './data'
+import { AppData, UserProfile, TaskResult, HistoryEntry, getLevelForXp, getStreak } from './data'
 import './App.css'
 
 export type Tab = 'dashboard' | 'calculator' | 'graph' | 'delta' | 'tasks' | 'settings'
@@ -119,6 +119,8 @@ export default function App() {
     setData(DEFAULT_DATA)
   }
 
+  const streak = data.profile ? getStreak(data.taskResults).current : 0
+
   if (!loaded) return <div className="loading">Loading...</div>
 
   if (!data.profile) {
@@ -132,6 +134,7 @@ export default function App() {
         onTabChange={handleTabChange}
         nickname={data.profile.nickname}
         xp={data.profile.xp}
+        streak={streak}
       />
       <main className="main-content">
         {activeTab === 'dashboard' && (

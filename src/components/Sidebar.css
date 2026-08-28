@@ -61,6 +61,28 @@
   color: var(--text-muted);
 }
 
+.user-streak {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(243, 156, 18, 0.1);
+  border: 1px solid rgba(243, 156, 18, 0.3);
+  border-radius: 12px;
+  padding: 3px 8px;
+}
+
+.user-streak-fire {
+  color: #f39c12;
+}
+
+.user-streak-num {
+  font-size: 12px;
+  font-weight: 800;
+  color: #f39c12;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+}
+
 .sidebar-nav {
   flex: 1;
   padding: 8px;
