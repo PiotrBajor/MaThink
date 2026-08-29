@@ -1,7 +1,7 @@
 {
   "name": "mathink",
   "version": "1.0.0",
-  "description": "MaThink - Aplikacja matematyczna",
+  "description": "MaThink - App for learning math",
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,7 @@
     "electron:dev": "vite build && electron ."
   },
   "keywords": [],
-  "author": "",
+  "author": "Piotr Bajor",
   "license": "ISC",
   "dependencies": {
     "mathjs": "^13.2.2",
