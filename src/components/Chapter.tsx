@@ -1,6 +1,8 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { CHAPTERS, TaskResult, generateChapterBatch, Task, XP_REWARDS } from '../data'
 import LessonView from './LessonView'
+import { playCorrect, playWrong, playStart } from '../utils/sound'
+import { confetti } from '../utils/confetti'
 import './Chapter.css'
 
 interface Props {
@@ -43,14 +45,19 @@ export default function Chapter({ chapterId, onBack, taskResults, onSolve, onQui
     return { solved, correct, bestDiff, bestDiffLabel: LEVEL_NAMES[bestDiff] || LEVEL_NAMES[0], lessonCounts }
   }, [taskResults, chapterId, chapter.lessons.length])
 
-  const startChapterQuiz = (diff: number) => {
-    setDifficulty(diff)
-    const batch = generateChapterBatch(chapterId, diff, TEST_LEN)
+  const startQuizWith = (diff: number, list?: Task[]) => {
+    const batch = list ?? generateChapterBatch(chapterId, diff, TEST_LEN)
     setTasks(batch)
     setCurrentIndex(0)
     setUserAnswer('')
     setAnswered([])
     setPhaseSafe('quiz')
+    playStart()
+  }
+
+  const startChapterQuiz = (diff: number) => {
+    setDifficulty(diff)
+    startQuizWith(diff)
   }
 
   const setPhaseSafe = (p: Phase) => {
@@ -79,11 +86,27 @@ export default function Chapter({ chapterId, onBack, taskResults, onSolve, onQui
     const newAnswered = [...answered, { task, userAnswer: String(ans), correct }]
     setAnswered(newAnswered)
     onSolve({ id: Date.now() + currentIndex, chapterId, difficulty: qd, correct, xpEarned: xp, timestamp: new Date().toISOString(), lessonIndex: task.lessonIndex })
+    if (correct) { playCorrect(); confetti(18) } else playWrong()
     if (currentIndex + 1 < tasks.length) { setCurrentIndex(prev => prev + 1); setUserAnswer('') }
-    else setPhaseSafe('results')
+    else { setPhaseSafe('results'); if (newAnswered.filter(a => a.correct).length >= tasks.length - 2) confetti(60) }
   }
 
+  useEffect(() => {
+    if (phase !== 'quiz' || tasks.length === 0) return
+    const onKey = (e: KeyboardEvent) => {
+      const task = tasks[currentIndex]
+      if (task.options) {
+        const idx = parseInt(e.key, 10)
+        if (idx >= 1 && idx <= task.options.length) { submitAnswer(String(task.options[idx - 1])); return }
+      }
+      if (e.key === 'Enter') submitAnswer()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
   const totalCorrect = answered.filter(a => a.correct).length
+  const wrongCount = answered.length - totalCorrect
   const totalXp = answered.reduce((s, a) => s + (a.correct ? XP_REWARDS[(a.task.difficulty ?? difficulty) - 1] : 0), 0)
 
   // Show lesson view if a lesson is selected
@@ -200,6 +223,9 @@ export default function Chapter({ chapterId, onBack, taskResults, onSolve, onQui
                 </button>
               </div>
             )}
+            <div className="quiz-tip">
+              {tasks[currentIndex].options ? 'Press 1-' + tasks[currentIndex].options.length + ' to pick an answer' : 'Press Enter to submit'}
+            </div>
           </div>
           {answered.length > 0 && (
             <div className="quiz-dots">
@@ -232,6 +258,11 @@ export default function Chapter({ chapterId, onBack, taskResults, onSolve, onQui
             ))}
           </div>
           <div className="results-actions">
+            {wrongCount > 0 && (
+              <button className="btn-review" onClick={() => startQuizWith(difficulty, answered.filter(a => !a.correct).map(a => a.task))} style={{ borderColor: chapter.color }}>
+                Review mistakes ({wrongCount})
+              </button>
+            )}
             <button className="btn-retry" onClick={() => startChapterQuiz(difficulty)} style={{ background: chapter.color }}>Try Again</button>
             <button className="btn-back-chapters" onClick={() => setPhaseSafe('menu')}>Back to Chapter</button>
           </div>

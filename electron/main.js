@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
 const fs = require('fs')
 
@@ -12,9 +12,11 @@ function ensureDataDir() {
 }
 
 const DEFAULT_DATA = {
+  version: 2,
   profile: null,
   taskResults: [],
   history: [],
+  settings: { sound: true, theme: 'dark' },
 }
 
 function loadData() {
@@ -82,4 +84,39 @@ ipcMain.handle('save-data', (_event, data) => {
 ipcMain.handle('reset-data', () => {
   saveData(DEFAULT_DATA)
   return true
+})
+
+ipcMain.handle('export-data', async (event) => {
+  const data = loadData()
+  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+    title: 'Export MaThink progress',
+    defaultPath: `mathink-backup-${new Date().toISOString().slice(0, 10)}.json`,
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+  })
+  if (canceled || !filePath) return false
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
+    return true
+  } catch (e) {
+    console.error('Export failed', e)
+    return false
+  }
+})
+
+ipcMain.handle('import-data', async (event) => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    title: 'Import MaThink progress',
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+    properties: ['openFile'],
+  })
+  if (canceled || !filePaths[0]) return null
+  try {
+    const parsed = JSON.parse(fs.readFileSync(filePaths[0], 'utf-8'))
+    if (!parsed || typeof parsed !== 'object') return null
+    saveData(parsed)
+    return parsed
+  } catch (e) {
+    console.error('Import failed', e)
+    return null
+  }
 })

@@ -1,17 +1,22 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import Sidebar from './components/Sidebar'
 import AccountSetup from './components/AccountSetup'
 import Dashboard from './components/Dashboard'
-import Calculator from './components/Calculator'
-import GraphPlotter from './components/GraphPlotter'
-import Delta from './components/Delta'
 import Tasks from './components/Tasks'
 import Chapter from './components/Chapter'
 import Settings from './components/Settings'
-import { AppData, UserProfile, TaskResult, HistoryEntry, getLevelForXp, getStreak } from './data'
+import { AppData, UserProfile, TaskResult, HistoryEntry, getLevelForXp, getStreak, normalizeData, DEFAULT_DATA } from './data'
+import { loadData, saveData, resetData } from './persistence'
+import { setSoundEnabled, playLevelUp } from './utils/sound'
+import { confetti } from './utils/confetti'
 import './App.css'
 
+const Calculator = lazy(() => import('./components/Calculator'))
+const GraphPlotter = lazy(() => import('./components/GraphPlotter'))
+const Delta = lazy(() => import('./components/Delta'))
+
 export type Tab = 'dashboard' | 'calculator' | 'graph' | 'delta' | 'tasks' | 'settings'
+export type Theme = 'dark' | 'light'
 
 declare global {
   interface Window {
@@ -19,14 +24,10 @@ declare global {
       loadData: () => Promise<AppData>
       saveData: (data: AppData) => Promise<boolean>
       resetData: () => Promise<boolean>
+      exportData: () => Promise<boolean>
+      importData: () => Promise<AppData | null>
     }
   }
-}
-
-const DEFAULT_DATA: AppData = {
-  profile: null,
-  taskResults: [],
-  history: [],
 }
 
 export default function App() {
@@ -39,25 +40,26 @@ export default function App() {
   const [showLeaveDialog, setShowLeaveDialog] = useState(false)
 
   useEffect(() => {
-    window.electronAPI.loadData().then(d => {
-      setData(d || DEFAULT_DATA)
-      setLoaded(true)
-    }).catch(() => setLoaded(true))
+    loadData().then(d => { setData(d); setLoaded(true) })
   }, [])
 
   useEffect(() => {
-    if (loaded) {
-      window.electronAPI.saveData(data).catch(console.error)
-    }
+    if (!loaded) return
+    window.electronAPI
+      ? window.electronAPI.saveData(data).catch(console.error)
+      : saveData(data)
   }, [data, loaded])
 
+  useEffect(() => {
+    setSoundEnabled(data.settings.sound !== false)
+  }, [data.settings.sound])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', data.settings.theme === 'light' ? 'light' : 'dark')
+  }, [data.settings.theme])
+
   const handleAccountSetup = (nickname: string) => {
-    const profile: UserProfile = {
-      nickname,
-      level: 1,
-      xp: 0,
-      createdAt: new Date().toISOString(),
-    }
+    const profile: UserProfile = { nickname, level: 1, xp: 0, createdAt: new Date().toISOString() }
     setData(prev => ({ ...prev, profile }))
   }
 
@@ -66,7 +68,12 @@ export default function App() {
       if (!prev.profile) return prev
       const newXp = prev.profile.xp + result.xpEarned
       const { level } = getLevelForXp(newXp)
+      const leveledUp = level > prev.profile.level
       const profile = { ...prev.profile, xp: newXp, level }
+      if (leveledUp) {
+        confetti(120)
+        playLevelUp()
+      }
       return {
         ...prev,
         profile,
@@ -76,17 +83,8 @@ export default function App() {
   }, [])
 
   const addHistory = (tab: string, input: string, result: string) => {
-    const entry: HistoryEntry = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      tab,
-      input,
-      result,
-    }
-    setData(prev => ({
-      ...prev,
-      history: [entry, ...prev.history].slice(0, 200),
-    }))
+    const entry: HistoryEntry = { id: Date.now(), timestamp: new Date().toISOString(), tab, input, result }
+    setData(prev => ({ ...prev, history: [entry, ...prev.history].slice(0, 200) }))
   }
 
   const handleTabChange = (tab: Tab) => {
@@ -115,8 +113,65 @@ export default function App() {
   }
 
   const handleReset = async () => {
-    await window.electronAPI.resetData()
-    setData(DEFAULT_DATA)
+    await resetData()
+    setData({ ...DEFAULT_DATA })
+  }
+
+  const handleToggleTheme = () => {
+    setData(prev => ({ ...prev, settings: { ...prev.settings, theme: prev.settings.theme === 'light' ? 'dark' : 'light' } }))
+  }
+
+  const handleSetSound = (sound: boolean) => {
+    setData(prev => ({ ...prev, settings: { ...prev.settings, sound } }))
+  }
+
+  const handleExport = async (): Promise<boolean> => {
+    if (window.electronAPI) {
+      try { return await window.electronAPI.exportData() } catch (e) { console.error(e); return false }
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'mathink-backup-' + new Date().toISOString().slice(0, 10) + '.json'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+    return true
+  }
+
+  const handleImport = async (): Promise<boolean> => {
+    if (window.electronAPI) {
+      try {
+        const d = await window.electronAPI.importData()
+        if (d) { setData(normalizeData(d)); return true }
+        return false
+      } catch (e) { console.error(e); return false }
+    }
+    return new Promise<boolean>(resolve => {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = 'application/json'
+      input.onchange = () => {
+        const f = input.files?.[0]
+        if (!f) { resolve(false); return }
+        const reader = new FileReader()
+        reader.onload = () => {
+          try {
+            const parsed = JSON.parse(String(reader.result))
+            if (parsed && typeof parsed === 'object') {
+              setData(normalizeData(parsed))
+              resolve(true)
+              return
+            }
+          } catch (e) { console.error(e) }
+          resolve(false)
+        }
+        reader.readAsText(f)
+      }
+      input.click()
+    })
   }
 
   const streak = data.profile ? getStreak(data.taskResults).current : 0
@@ -135,18 +190,22 @@ export default function App() {
         nickname={data.profile.nickname}
         xp={data.profile.xp}
         streak={streak}
+        theme={data.settings.theme}
+        onToggleTheme={handleToggleTheme}
       />
       <main className="main-content">
-        {activeTab === 'dashboard' && (
-          <Dashboard profile={data.profile} taskResults={data.taskResults} />
-        )}
-        {activeTab === 'calculator' && (
-          <Calculator onResult={(input, result) => addHistory('Calculator', input, result)} />
-        )}
-        {activeTab === 'graph' && <GraphPlotter />}
-        {activeTab === 'delta' && (
-          <Delta onResult={(input, result) => addHistory('Delta', input, result)} />
-        )}
+        <Suspense fallback={<div className="loading">Loading...</div>}>
+          {activeTab === 'dashboard' && (
+            <Dashboard profile={data.profile} taskResults={data.taskResults} />
+          )}
+          {activeTab === 'calculator' && (
+            <Calculator onResult={(input, result) => addHistory('Calculator', input, result)} />
+          )}
+          {activeTab === 'graph' && <GraphPlotter />}
+          {activeTab === 'delta' && (
+            <Delta onResult={(input, result) => addHistory('Delta', input, result)} />
+          )}
+        </Suspense>
         {activeTab === 'tasks' && !selectedChapter && (
           <Tasks
             onSelectChapter={setSelectedChapter}
@@ -164,7 +223,14 @@ export default function App() {
           />
         )}
         {activeTab === 'settings' && (
-          <Settings profile={data.profile} onReset={handleReset} />
+          <Settings
+            profile={data.profile}
+            onReset={handleReset}
+            sound={data.settings.sound}
+            onSoundChange={handleSetSound}
+            onExport={handleExport}
+            onImport={handleImport}
+          />
         )}
       </main>
 

@@ -98,3 +98,77 @@
   font-size: 12px;
   cursor: pointer;
 }
+
+.btn-sec-action {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.btn-sec-action:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.toggle-track {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--bg-hover);
+  position: relative;
+  display: block;
+  transition: background 0.15s ease;
+}
+
+.btn-toggle.on .toggle-track {
+  background: var(--accent);
+}
+
+.toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.15s ease;
+}
+
+.btn-toggle.on .toggle-knob {
+  left: 18px;
+}
+
+.toggle-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  min-width: 24px;
+  text-align: left;
+}
+
+.settings-msg {
+  margin-top: 4px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.settings-msg.ok { color: var(--success); }
+.settings-msg.err { color: var(--danger); }

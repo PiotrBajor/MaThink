@@ -2,8 +2,35 @@ import React from 'react'
 
 export interface UserProfile { nickname: string; level: number; xp: number; createdAt: string }
 export interface TaskResult { id: number; chapterId: string; difficulty: number; correct: boolean; xpEarned: number; timestamp: string; lessonIndex?: number }
-export interface AppData { profile: UserProfile | null; taskResults: TaskResult[]; history: HistoryEntry[] }
+export interface SettingsPrefs { sound: boolean; theme: 'dark' | 'light' }
+export interface AppData { version: number; profile: UserProfile | null; taskResults: TaskResult[]; history: HistoryEntry[]; settings: SettingsPrefs }
 export interface HistoryEntry { id: number; timestamp: string; tab: string; input: string; result: string }
+
+export const DATA_VERSION = 2
+export const DEFAULT_SETTINGS: SettingsPrefs = { sound: true, theme: 'dark' }
+
+export const DEFAULT_DATA: AppData = {
+  version: DATA_VERSION,
+  profile: null,
+  taskResults: [],
+  history: [],
+  settings: { ...DEFAULT_SETTINGS },
+}
+
+export function normalizeData(raw: unknown): AppData {
+  if (!raw || typeof raw !== 'object') return { ...DEFAULT_DATA }
+  const r = raw as Record<string, unknown>
+  const profile = r.profile && typeof r.profile === 'object'
+    ? r.profile as UserProfile
+    : null
+  return {
+    version: DATA_VERSION,
+    profile,
+    taskResults: Array.isArray(r.taskResults) ? r.taskResults as TaskResult[] : [],
+    history: Array.isArray(r.history) ? (r.history as HistoryEntry[]).slice(0, 200) : [],
+    settings: { ...DEFAULT_SETTINGS, ...(r.settings && typeof r.settings === 'object' ? r.settings as Partial<SettingsPrefs> : {}) },
+  }
+}
 
 export const XP_PER_LEVEL = [0,100,250,500,850,1300,1900,2600,3500,4600,6000,7800,10000,12500,15500,19000,23000,27500,32500,38000]
 export function getLevelForXp(xp: number) {

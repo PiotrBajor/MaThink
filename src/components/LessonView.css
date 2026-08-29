@@ -30,6 +30,13 @@
   color: var(--text-primary); overflow-x: auto; white-space: pre; line-height: 1.6;
 }
 
+.lc-mathgraph-placeholder {
+  padding: 48px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 /* Examples section */
 .lesson-examples-section { margin-top: 8px; }
 .lesson-examples-section h4 { font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
@@ -106,3 +113,6 @@
 .btn-retry:hover { opacity: 0.9; }
 .btn-back-chapters { padding: 12px 24px; background: transparent; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-secondary); font-size: 15px; cursor: pointer; }
 .btn-back-chapters:hover { border-color: var(--text-muted); color: var(--text-primary); }
+.btn-review { padding: 12px 24px; background: transparent; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); font-size: 15px; font-weight: 600; cursor: pointer; }
+.btn-review:hover { border-color: var(--text-muted); color: var(--text-primary); }
+.quiz-tip { margin-top: 14px; text-align: center; font-size: 12px; color: var(--text-muted); user-select: none; }

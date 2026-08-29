@@ -5,10 +5,15 @@ import './Settings.css'
 interface Props {
   profile: UserProfile
   onReset: () => void
+  sound: boolean
+  onSoundChange: (sound: boolean) => void
+  onExport: () => Promise<boolean>
+  onImport: () => Promise<boolean>
 }
 
-export default function Settings({ profile, onReset }: Props) {
+export default function Settings({ profile, onReset, sound, onSoundChange, onExport, onImport }: Props) {
   const [confirming, setConfirming] = useState(false)
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   const handleReset = () => {
     if (!confirming) {
@@ -17,6 +22,18 @@ export default function Settings({ profile, onReset }: Props) {
     }
     onReset()
     setConfirming(false)
+  }
+
+  const exportData = async () => {
+    setMsg(null)
+    const ok = await onExport()
+    setMsg(ok ? { ok: true, text: 'Progress exported.' } : { ok: false, text: 'Export failed.' })
+  }
+
+  const importData = async () => {
+    setMsg(null)
+    const ok = await onImport()
+    setMsg(ok ? { ok: true, text: 'Progress imported.' } : { ok: false, text: 'Import failed or cancelled.' })
   }
 
   return (
@@ -48,6 +65,46 @@ export default function Settings({ profile, onReset }: Props) {
       </div>
 
       <div className="settings-section">
+        <h3>Preferences</h3>
+        <div className="settings-card">
+          <div className="settings-row">
+            <div>
+              <span className="settings-label">Sound effects</span>
+              <p className="settings-desc">Play a short sound when an answer is right or wrong.</p>
+            </div>
+            <button
+              className={`btn-toggle ${sound ? 'on' : ''}`}
+              onClick={() => onSoundChange(!sound)}
+              aria-pressed={sound}
+            >
+              <span className="toggle-track"><span className="toggle-knob" /></span>
+              <span className="toggle-label">{sound ? 'On' : 'Off'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <h3>Backup</h3>
+        <div className="settings-card">
+          <div className="settings-row">
+            <div>
+              <span className="settings-label">Export progress</span>
+              <p className="settings-desc">Save your profile, task history and settings to a JSON file.</p>
+            </div>
+            <button className="btn-sec-action" onClick={exportData}>Export</button>
+          </div>
+          <div className="settings-row">
+            <div>
+              <span className="settings-label">Import progress</span>
+              <p className="settings-desc">Restore a previously exported backup. Overwrites current progress.</p>
+            </div>
+            <button className="btn-sec-action" onClick={importData}>Import</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="settings-section">
         <h3>Data</h3>
         <div className="settings-card">
           <div className="settings-row">
@@ -67,6 +124,10 @@ export default function Settings({ profile, onReset }: Props) {
           )}
         </div>
       </div>
+
+      {msg && (
+        <div className={`settings-msg ${msg.ok ? 'ok' : 'err'}`}>{msg.text}</div>
+      )}
 
       <div className="settings-section">
         <h3>About</h3>

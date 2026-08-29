@@ -1,7 +1,10 @@
-import { useState, type ReactNode } from 'react'
+import { useState, useEffect, lazy, Suspense, type ReactNode } from 'react'
 import { Task, generateLessonBatch, XP_REWARDS } from '../data'
-import MathGraph from './MathGraph'
+import { playCorrect, playWrong, playStart } from '../utils/sound'
+import { confetti } from '../utils/confetti'
 import './LessonView.css'
+
+const MathGraph = lazy(() => import('./MathGraph'))
 
 interface Props {
   chapterId: string
@@ -42,14 +45,17 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
   const [userAnswer, setUserAnswer] = useState('')
   const [answered, setAnswered] = useState<AnsweredTask[]>([])
 
-  const startQuiz = () => {
-    const batch = generateLessonBatch(chapterId, lessonIndex, TEST_LEN)
+  const startQuizWith = (list?: Task[]) => {
+    const batch = list ?? generateLessonBatch(chapterId, lessonIndex, TEST_LEN)
     setTasks(batch)
     setCurrentIndex(0)
     setUserAnswer('')
     setAnswered([])
     setPhaseSafe('quiz')
+    playStart()
   }
+
+  const startQuiz = () => startQuizWith()
 
   const submitAnswer = (value?: string) => {
     const task = tasks[currentIndex]
@@ -72,11 +78,27 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
     const newAnswered = [...answered, { task, userAnswer: String(ans), correct }]
     setAnswered(newAnswered)
     onSolve({ id: Date.now() + currentIndex, chapterId, difficulty: qd, correct, xpEarned: xp, timestamp: new Date().toISOString(), lessonIndex })
+    if (correct) { playCorrect(); confetti(18) } else playWrong()
     if (currentIndex + 1 < tasks.length) { setCurrentIndex(prev => prev + 1); setUserAnswer('') }
-    else setPhaseSafe('results')
+    else { setPhaseSafe('results'); if (newAnswered.filter(a => a.correct).length >= tasks.length - 2) confetti(60) }
   }
 
+  useEffect(() => {
+    if (phase !== 'quiz' || tasks.length === 0) return
+    const onKey = (e: KeyboardEvent) => {
+      const task = tasks[currentIndex]
+      if (task.options) {
+        const idx = parseInt(e.key, 10)
+        if (idx >= 1 && idx <= task.options.length) { submitAnswer(String(task.options[idx - 1])); return }
+      }
+      if (e.key === 'Enter') submitAnswer()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
   const totalCorrect = answered.filter(a => a.correct).length
+  const wrongCount = answered.length - totalCorrect
   const totalXp = answered.reduce((s, a) => s + (a.correct ? XP_REWARDS[(a.task.difficulty ?? 1) - 1] : 0), 0)
 
   return (
@@ -96,7 +118,11 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
             if (block.type === 'example') return <div key={i} className="lc-example"><span className="lc-example-label">Example</span><Rich text={block.content} /></div>
             if (block.type === 'rule') return <div key={i} className="lc-rule"><Rich text={block.content} /></div>
             if (block.type === 'code') return <pre key={i} className="lc-code">{block.content}</pre>
-            if (block.type === 'graph') return <MathGraph key={i} expr={block.content} color={chapterColor} />
+            if (block.type === 'graph') return (
+              <Suspense key={i} fallback={<div className="lc-mathgraph-placeholder">Loading graph...</div>}>
+                <MathGraph expr={block.content} color={chapterColor} />
+              </Suspense>
+            )
             return <p key={i} className="lc-text"><Rich text={block.content} /></p>
           })}
 
@@ -149,6 +175,9 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
                 </button>
               </div>
             )}
+            <div className="quiz-tip">
+              {tasks[currentIndex].options ? 'Press 1-' + tasks[currentIndex].options.length + ' to pick an answer' : 'Press Enter to submit'}
+            </div>
           </div>
           {answered.length > 0 && (
             <div className="quiz-dots">
@@ -181,6 +210,11 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
             ))}
           </div>
           <div className="results-actions">
+            {wrongCount > 0 && (
+              <button className="btn-review" onClick={() => startQuizWith(answered.filter(a => !a.correct).map(a => a.task))} style={{ borderColor: chapterColor }}>
+                Review mistakes ({wrongCount})
+              </button>
+            )}
             <button className="btn-retry" onClick={startQuiz} style={{ background: chapterColor }}>Try Again</button>
             <button className="btn-back-chapters" onClick={() => setPhaseSafe('read')}>Back to Lesson</button>
           </div>

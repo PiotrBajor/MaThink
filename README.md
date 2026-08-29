@@ -18,7 +18,8 @@ Built with Electron, React and TypeScript.
 1. Finish a lesson's 15-question test to light it up in the chapter view.
 2. Reaching 80% accuracy on a difficulty unlocks the next one: **Easy → Medium → Hard → Expert → Master**.
 3. Each chapter has a knockout *chapter test* with five difficulty tiers that mirrors your unlocked progress.
-4. Watch the Dashboard for your XP level, weekly activity and streak.
+4. Missed a few? Use **Review mistakes** on the results screen — it re-runs just the questions you got wrong.
+5. Watch the Dashboard for your XP level, weekly activity and streak.
 
 ## Chapters
 
@@ -56,10 +57,11 @@ Three companions live outside the lessons:
 
 ## Progress & gamification
 
-- **XP and levels** — every correct answer earns XP that scales with the question's difficulty (Easy 10 → Master 80 per question).
+- **XP and levels** — every correct answer earns XP that scales with the question's difficulty (Easy 10 → Master 80 per question). Leveling up triggers a little fanfare (toggleable).
 - **Streaks** — a flame in the sidebar shows your current run; the Dashboard card shows the last 7 days and your all-time best. The fire stays lit on every day you solved at least one task.
 - **Per-lesson dots** — complete 15 answers of a lesson to mark it done in the chapter list and the Chapters tab.
 - **Stats** — total tasks, accuracy, XP and today's count on the Dashboard.
+- **Nice-to-haves** — keyboard first: play a lesson with `Enter` to submit a typed answer or `1`–`4` to pick a multiple-choice option. Swap light/dark themes from the sidebar. All preferences are saved locally.
 
 ## Getting started
 
@@ -72,15 +74,25 @@ npm install
 # run in the browser only (faster during development)
 npm run dev            # opens http://localhost:5173
 
+# run automated generator & logic tests
+npm test
+
 # build and launch as a desktop app
 npm run electron:dev
 
 # production build (output goes to dist/)
 npm run build
-npm start              # launch Electron using an existing build
+
+# package installers with electron-builder
+npm run dist           # current platform
+npm run dist:win       # Windows NSIS installer
+npm run dist:mac       # macOS DMG + ZIP
+npm run dist:linux     # Linux AppImage
 ```
 
-> `npm run dev` runs just Vite, so the Electron shell (and file persistence via IPC) is not active — useful for quick UI iteration. Use `npm run electron:dev` for the full app.
+Application icons live in `build/` and can be regenerated with `npm run icons`.
+
+> `npm run dev` runs just Vite, so progress is kept in `localStorage` instead of the Electron file store. Use `npm run electron:dev` for the full app.
 
 ## Data & privacy
 
@@ -92,17 +104,22 @@ Progress is saved locally to:
 
 (on Windows that is `%APPDATA%\mathink\mathink-data\appdata.json`).
 
-It holds your profile, every task result and the calculator history. Use **Settings → Reset All Data** to wipe it (two clicks to confirm — no recovery after that).
+It holds your profile, every task result, the calculator history and your preferences (theme, sound). Use **Settings → Export progress** to back it up as a JSON file, **Import progress** to restore a backup, or **Reset All Data** (two clicks to confirm — no recovery after that).
 
 ## Project structure
 
 ```
 .
+├─ build/            # application icons (icon.png, icon.ico)
 ├─ electron/
-│  ├─ main.js        # window, persistent JSON store (IPC)
-│  └─ preload.js     # safe bridge: loadData / saveData / resetData
+│  ├─ main.js        # window, persistent JSON store, import/export dialogs (IPC)
+│  └─ preload.js     # safe bridge: loadData / saveData / resetData / export / import
+├─ scripts/          # icon generation, build tooling
 ├─ src/
-│  ├─ data.ts        # chapters, lesson content, task generators
+│  ├─ data.ts        # chapters, lesson content, task generators, streaks, migration
+│  ├─ data.test.ts   # generator & logic tests (npm test)
+│  ├─ persistence.ts # Electron IPC + localStorage fallback
+│  ├─ utils/         # sound (WebAudio) and confetti helpers
 │  ├─ components/    # Dashboard, Lessons, Chapter, Tasks, Tools, Settings
 │  └─ App.tsx        # state, routing, persistence wiring
 ├─ task_ideas.txt    # internal bank of task-type ideas
@@ -111,9 +128,10 @@ It holds your profile, every task result and the calculator history. Use **Setti
 
 ## Tech stack
 
-- [Electron](https://www.electronjs.org) — desktop shell
+- [Electron](https://www.electronjs.org) + [electron-builder](https://www.electron.build) — desktop shell and installers
 - [React 18](https://react.dev) + [TypeScript](https://www.typescriptlang.org)
-- [Vite](https://vitejs.dev) — bundler
+- [Vite](https://vitejs.dev) — bundler (tool screens are code-split and loaded on demand)
+- [Vitest](https://vitest.dev) — tests for task generators and progress logic
 - [mathjs](https://mathjs.org) — expression evaluation
 - [plotly.js](https://plotly.com/javascript/) — interactive graphs
 

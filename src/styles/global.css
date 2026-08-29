@@ -25,6 +25,22 @@
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
+:root[data-theme="light"] {
+  --bg-primary: #f4f4f6;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #eaeaee;
+  --bg-hover: #dedee4;
+  --accent: #5b4bd4;
+  --accent-hover: #4a3db8;
+  --accent-dim: #7c6ef7;
+  --text-primary: #1c1c1e;
+  --text-secondary: #4f4f55;
+  --text-muted: #8c8c94;
+  --border: #d7d7dd;
+  --border-focus: #6c5ce7;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
 body {
   font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg-primary);
@@ -56,4 +72,9 @@ input, button, select, textarea {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
 }
