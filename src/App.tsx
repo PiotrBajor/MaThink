@@ -14,8 +14,10 @@ import './App.css'
 const Calculator = lazy(() => import('./components/Calculator'))
 const GraphPlotter = lazy(() => import('./components/GraphPlotter'))
 const Delta = lazy(() => import('./components/Delta'))
+const Solids = lazy(() => import('./components/Solids'))
+const Shapes = lazy(() => import('./components/Shapes'))
 
-export type Tab = 'dashboard' | 'calculator' | 'graph' | 'delta' | 'tasks' | 'settings'
+export type Tab = 'dashboard' | 'calculator' | 'graph' | 'delta' | 'solids' | 'shapes' | 'tasks' | 'settings'
 export type Theme = 'dark' | 'light'
 
 declare global {
@@ -205,6 +207,8 @@ export default function App() {
           {activeTab === 'delta' && (
             <Delta onResult={(input, result) => addHistory('Delta', input, result)} />
           )}
+          {activeTab === 'solids' && <Solids />}
+          {activeTab === 'shapes' && <Shapes />}
         </Suspense>
         {activeTab === 'tasks' && !selectedChapter && (
           <Tasks

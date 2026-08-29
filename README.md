@@ -49,11 +49,13 @@ Questions are generated from a template system, so a test rarely feels repetitiv
 
 ## Tools
 
-Three companions live outside the lessons:
+Five companions live outside the lessons:
 
 - **Calculator** — full expression evaluator (via [mathjs](https://mathjs.org)) with a session history you can tap to revisit or re-run.
 - **Function Graphs** — plot `y = f(x)` on an interactive [Plotly](https://plotly.com/javascript/) chart, with quick examples like `x²`, `sin(x)` and `log(x)`.
 - **Delta Calculator** — type `ax²+bx+c` and get a full worked solution: discriminant Δ, roots (including complex ones) and a parabola graph with the vertex marked.
+- **Solid Builder (3D)** — pick a solid (cube, cuboid, cylinder, cone, sphere, pyramid, right triangular prism), type its dimensions, and explore an interactive 3D model — drag to rotate, scroll to zoom. MaThink shows volume, surface area and the meaningful angles (apex angle, slant vs. base, space-diagonal angles…). Change the color freely and switch the unit between metres and centimetres. A second mode lets you *sketch* a solid by clicking points on a 3D grid: the app computes the convex hull and reports its volume and surface.
+- **2D Shapes** — draw a polygon by placing points on a flat coordinate grid. MaThink instantly computes the area, perimeter, whether it is convex or concave (and if it self-intersects), plus every interior angle listed per vertex. Results are shown in metres or centimetres.
 
 ## Progress & gamification
 
@@ -118,9 +120,11 @@ It holds your profile, every task result, the calculator history and your prefer
 ├─ src/
 │  ├─ data.ts        # chapters, lesson content, task generators, streaks, migration
 │  ├─ data.test.ts   # generator & logic tests (npm test)
+│  ├─ lib/           # geometry: 2D polygon math + 3D solid meshes & convex hull
+│  ├─ lib/geom.test.ts # geometry tests (20 cases)
 │  ├─ persistence.ts # Electron IPC + localStorage fallback
 │  ├─ utils/         # sound (WebAudio) and confetti helpers
-│  ├─ components/    # Dashboard, Lessons, Chapter, Tasks, Tools, Settings
+│  ├─ components/    # Dashboard, Lessons, Chapter, Tasks, Tools, Solids, Shapes, Settings
 │  └─ App.tsx        # state, routing, persistence wiring
 ├─ task_ideas.txt    # internal bank of task-type ideas
 └─ package.json
