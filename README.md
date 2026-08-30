@@ -33,6 +33,9 @@ Built with Electron, React and TypeScript.
 | **Logarithms** | Log basics, log rules, natural log, solving |
 | **Equations** | One-step → multi-step, both sides, spotting the wrong step |
 | **Functions** | Linear, quadratic, vertex and roots, log functions, domain |
+| **Plane Figures** | Lines & angles, triangles, area, Pythagoras, quadrilaterals, circles & sectors, regular polygons, similarity |
+| **3D Figures** | Cubes & cuboids, prisms, pyramids, cylinders, cones, spheres, frustums, solids in solids |
+| **Trigonometry** | Ratios, special angles, solving triangles, sine/cosine laws, sine area, unit circle |
 
 ## Question variety
 
@@ -46,6 +49,8 @@ Questions are generated from a template system, so a test rarely feels repetitiv
 - series chains (`25 + 17 → + 34 → ?`)
 - build-the-equation from a sentence, pick-the-next-step, and find-the-wrong-step in a student's working
 - matching (which pair is correct, which formula has a given slope, which point lies on the graph)
+
+Math in lessons and questions is typeset with a light markup renderer (`src/utils/mathfmt.ts`): `^..^` for superscripts, `~..~` for subscripts and `[a/b]` for proper stacked fractions like `½`-style layouts — so formulas read as real mathematics, not ASCII.
 
 ## Tools
 
@@ -138,6 +143,14 @@ It holds your profile, every task result, the calculator history and your prefer
 - [Vitest](https://vitest.dev) — tests for task generators and progress logic
 - [mathjs](https://mathjs.org) — expression evaluation
 - [plotly.js](https://plotly.com/javascript/) — interactive graphs
+
+### Geometry tabs — Solid Builder (3D) & 2D Shapes
+
+- **plotly.js `scatter3d` / `mesh3d`** — renders the 3D solid surfaces, hull faces and wireframe edges; **`scatter`** draws the 2D polygon, its grid and the angle/vertex annotations.
+- **Plotly click & hover events** (`gd.on('plotly_click', …)`) — point picking on both grids: every candidate sits on its own `hoverinfo`-enabled trace so a click adds/removes a vertex (the *skip* traces such as mesh faces, edges and the polygon fill deliberately ignore the mouse).
+- **Custom TypeScript geometry engine** (`src/lib/geom2d.ts`, `src/lib/geom3d.ts`) — shoelace area, perimeter, interior angles (incl. reflex vertices) and self-intersection detection for polygons; triangle-fan / lat-long mesh builders for all 7 solids; and a from-scratch **QuickHull convex hull in 3D** with a scale-aware tolerance so coplanar points stay consistent.
+- **Tested with Vitest** — 20 geometry tests (hull volumes/surfaces for cube, octahedron, tetrahedron; polygon angle/self-intersection cases) run as part of `npm test`.
+- **Vite code-splitting** — both tools are lazy-loaded (see `src/lib/` and the `solids`/`shapes` routes), so plotly and the geometry code only load in the bundle when the tab is opened.
 
 ## License
 

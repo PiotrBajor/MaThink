@@ -4,6 +4,7 @@ import LessonView from './LessonView'
 import { playCorrect, playWrong, playStart } from '../utils/sound'
 import { confetti } from '../utils/confetti'
 import './Chapter.css'
+import CalcPopover from './CalcPopover'
 
 interface Props {
   chapterId: string
@@ -28,6 +29,7 @@ export default function Chapter({ chapterId, onBack, taskResults, onSolve, onQui
   const [userAnswer, setUserAnswer] = useState('')
   const [answered, setAnswered] = useState<AnsweredTask[]>([])
   const [selectedLesson, setSelectedLesson] = useState<number | null>(null)
+  const [calcOpen, setCalcOpen] = useState(false)
 
   const stats = useMemo(() => {
     const cr = taskResults.filter(t => t.chapterId === chapterId)
@@ -94,6 +96,7 @@ export default function Chapter({ chapterId, onBack, taskResults, onSolve, onQui
   useEffect(() => {
     if (phase !== 'quiz' || tasks.length === 0) return
     const onKey = (e: KeyboardEvent) => {
+      if (calcOpen) return
       const task = tasks[currentIndex]
       if (task.options) {
         const idx = parseInt(e.key, 10)
@@ -223,6 +226,9 @@ export default function Chapter({ chapterId, onBack, taskResults, onSolve, onQui
                 </button>
               </div>
             )}
+            <div className="quiz-actions-row">
+              <CalcPopover onOpenChange={setCalcOpen} />
+            </div>
             <div className="quiz-tip">
               {tasks[currentIndex].options ? 'Press 1-' + tasks[currentIndex].options.length + ' to pick an answer' : 'Press Enter to submit'}
             </div>

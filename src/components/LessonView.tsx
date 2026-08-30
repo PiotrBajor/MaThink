@@ -1,8 +1,10 @@
 import { useState, useEffect, lazy, Suspense, type ReactNode } from 'react'
 import { Task, generateLessonBatch, XP_REWARDS } from '../data'
+import { renderMath } from '../utils/mathfmt'
 import { playCorrect, playWrong, playStart } from '../utils/sound'
 import { confetti } from '../utils/confetti'
 import './LessonView.css'
+import CalcPopover from './CalcPopover'
 
 const MathGraph = lazy(() => import('./MathGraph'))
 
@@ -21,14 +23,7 @@ interface Props {
 interface AnsweredTask { task: Task; userAnswer: string; correct: boolean }
 
 function Rich({ text }: { text: string }) {
-  const tokens = text.split(/(~[^~]+~|\^[^ ^]+\^)/g)
-  const parts: ReactNode[] = []
-  tokens.forEach((tok, i) => {
-    if (tok.startsWith('~') && tok.endsWith('~')) parts.push(<sub key={i}>{tok.slice(1, -1)}</sub>)
-    else if (tok.startsWith('^') && tok.endsWith('^')) parts.push(<sup key={i}>{tok.slice(1, -1)}</sup>)
-    else if (tok) parts.push(tok)
-  })
-  return <>{parts}</>
+  return <>{renderMath(text)}</>
 }
 
 const TEST_LEN = 15
@@ -44,6 +39,7 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
   const [currentIndex, setCurrentIndex] = useState(0)
   const [userAnswer, setUserAnswer] = useState('')
   const [answered, setAnswered] = useState<AnsweredTask[]>([])
+  const [calcOpen, setCalcOpen] = useState(false)
 
   const startQuizWith = (list?: Task[]) => {
     const batch = list ?? generateLessonBatch(chapterId, lessonIndex, TEST_LEN)
@@ -86,6 +82,7 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
   useEffect(() => {
     if (phase !== 'quiz' || tasks.length === 0) return
     const onKey = (e: KeyboardEvent) => {
+      if (calcOpen) return
       const task = tasks[currentIndex]
       if (task.options) {
         const idx = parseInt(e.key, 10)
@@ -175,6 +172,9 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
                 </button>
               </div>
             )}
+            <div className="quiz-actions-row">
+              <CalcPopover onOpenChange={setCalcOpen} />
+            </div>
             <div className="quiz-tip">
               {tasks[currentIndex].options ? 'Press 1-' + tasks[currentIndex].options.length + ' to pick an answer' : 'Press Enter to submit'}
             </div>
