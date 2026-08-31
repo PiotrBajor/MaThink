@@ -93,7 +93,7 @@ export function getStreak(taskResults: TaskResult[]): StreakInfo {
 
 export interface Chapter { id: string; title: string; icon: string; color: string; lessons: Lesson[] }
 export interface Lesson { title: string; content: LessonBlock[]; examples: string[] }
-export interface LessonBlock { type: 'text' | 'heading' | 'example' | 'rule' | 'code' | 'graph'; content: string }
+export interface LessonBlock { type: 'text' | 'heading' | 'example' | 'rule' | 'code' | 'graph' | 'diagram'; content: string }
 export interface Task { display: React.ReactNode; answer: number | string; options?: (string | number)[]; lessonIndex: number; difficulty?: number }
 
 function rand(a: number, b: number) { return Math.floor(Math.random() * (b - a + 1)) + a }
@@ -424,6 +424,7 @@ export const CHAPTERS: Chapter[] = [
       { type: 'text', content: 'An angle is formed by two rays that share an endpoint (its vertex). We measure angles in degrees: a full turn is 360\u00B0.' },
       { type: 'heading', content: 'Types of angles' },
       { type: 'text', content: 'Acute (< 90\u00B0), right (= 90\u00B0), obtuse (> 90\u00B0 and < 180\u00B0), straight (= 180\u00B0), reflex (> 180\u00B0).' },
+      { type: 'diagram', content: 'angles-basic' },
       { type: 'example', content: '35\u00B0 is acute, 90\u00B0 is right, 130\u00B0 is obtuse, 180\u00B0 is straight, 200\u00B0 is reflex.' },
       { type: 'heading', content: 'Complementary and supplementary' },
       { type: 'text', content: 'Two angles that add up to 90\u00B0 are complementary; two that add up to 180\u00B0 are supplementary.' },
@@ -433,6 +434,7 @@ export const CHAPTERS: Chapter[] = [
       { type: 'example', content: 'If three angles round a point are 100\u00B0, 120\u00B0 and 80\u00B0, the fourth one is 360\u00B0 \u2212 (100\u00B0 + 120\u00B0 + 80\u00B0) = 60\u00B0.' },
       { type: 'heading', content: 'Parallel lines and a transversal' },
       { type: 'text', content: 'A line crossing two parallel lines creates: equal corresponding angles, equal alternate interior/exterior angles, and supplementary consecutive interior angles.' },
+      { type: 'diagram', content: 'parallel-transversal' },
       { type: 'example', content: 'If one angle between parallel lines is 70\u00B0, the alternate interior angle is also 70\u00B0 and the consecutive interior angle is 180\u00B0 \u2212 70\u00B0 = 110\u00B0.' },
       { type: 'rule', content: 'Vertically opposite angles are equal.' },
       { type: 'rule', content: 'Angles on a straight line sum to 180\u00B0.' },
@@ -444,6 +446,7 @@ export const CHAPTERS: Chapter[] = [
       { type: 'example', content: 'A triangle with angles 60\u00B0, 70\u00B0 and 50\u00B0: 60\u00B0 + 70\u00B0 + 50\u00B0 = 180\u00B0 \u2713' },
       { type: 'heading', content: 'Types by sides' },
       { type: 'text', content: 'Scalene \u2014 all sides different. Isosceles \u2014 two equal sides; the base angles (opposite the equal sides) are equal. Equilateral \u2014 all three sides (and angles) equal; each angle is 60\u00B0.' },
+      { type: 'diagram', content: 'triangle-types' },
       { type: 'example', content: 'In an isosceles triangle with vertex angle 40\u00B0, each base angle is [180\u221240]/2 = 70\u00B0.' },
       { type: 'heading', content: 'Types by angles' },
       { type: 'text', content: 'Acute \u2014 all angles < 90\u00B0. Right \u2014 exactly one 90\u00B0 angle; the side opposite it is the longest and is called the hypotenuse. Obtuse \u2014 one angle > 90\u00B0.' },
@@ -458,6 +461,7 @@ export const CHAPTERS: Chapter[] = [
     ], examples: ['60\u00B0 + 70\u00B0 + 50\u00B0 = 180\u00B0', 'isosceles vertex 40\u00B0 \u2192 base angles 70\u00B0'] },
     { title: 'Area of a Triangle', content: [
       { type: 'text', content: 'The area of a triangle is [1/2] \u00D7 base \u00D7 height:  A = [a\u00B7h]/2 . Any side can be the base; the height is the perpendicular distance to the opposite vertex.' },
+      { type: 'diagram', content: 'triangle-height' },
       { type: 'example', content: 'Base a = 8, height h = 5:  A = [8\u00B75]/2 = 20. (Answer in square units.)' },
       { type: 'text', content: 'In a right triangle the two legs are perpendicular, so A = [1/2] \u00D7 leg\u2081 \u00D7 leg\u2082.' },
       { type: 'example', content: 'Right triangle with legs 3 and 4: A = [1/2] \u00D7 3 \u00D7 4 = 6.' },
@@ -473,6 +477,7 @@ export const CHAPTERS: Chapter[] = [
     ], examples: ['base 8, height 5 \u2192 20', '3-4-5 triangle \u2192 6'] },
     { title: 'Pythagorean Theorem', content: [
       { type: 'text', content: 'In a right triangle with legs a, b and hypotenuse c:  a^2^ + b^2^ = c^2^ .' },
+      { type: 'diagram', content: 'pythagorean' },
       { type: 'example', content: 'Legs 3 and 4:  c^2^ = 3^2^ + 4^2^ = 9 + 16 = 25, so c = 5.' },
       { type: 'text', content: 'To find a leg:  a = \u221A(c^2^ \u2212 b^2^) .' },
       { type: 'example', content: 'Hypotenuse 13, leg 5:  a = \u221A(13^2^ \u2212 5^2^) = \u221A(169 \u2212 25) = \u221A144 = 12.' },
@@ -489,6 +494,7 @@ export const CHAPTERS: Chapter[] = [
     ], examples: ['3^2^ + 4^2^ = 25 \u2192 c = 5', '13^2^ \u2212 5^2^ = 144 \u2192 leg 12'] },
     { title: 'Squares and Rectangles', content: [
       { type: 'text', content: 'A square has all four sides equal and all angles 90\u00B0. A rectangle has opposite sides equal and all angles 90\u00B0.' },
+      { type: 'diagram', content: 'rectangle-square' },
       { type: 'heading', content: 'Square (side a)' },
       { type: 'text', content: 'Perimeter P = 4a,  area A = a^2^,  diagonal d = a\u221A2.' },
       { type: 'example', content: 'Side 5:  P = 20,  A = 25,  d = 5\u221A2.' },
@@ -503,6 +509,7 @@ export const CHAPTERS: Chapter[] = [
     ], examples: ['square side 5 \u2192 P = 20, A = 25', 'rectangle 6 \u00D7 8 \u2192 d = 10'] },
     { title: 'Parallelograms, Rhombuses, Kites', content: [
       { type: 'text', content: 'A parallelogram has two pairs of parallel sides. Opposite sides and opposite angles are equal; the diagonals bisect each other.' },
+      { type: 'diagram', content: 'parallelogram' },
       { type: 'heading', content: 'Parallelogram (base a, height h)' },
       { type: 'text', content: 'Area  A = a\u00B7h  (base \u00D7 height, NOT side\u00D7side). Any side can be the base.' },
       { type: 'example', content: 'Base 7, height 4:  A = 7 \u00D7 4 = 28.' },
@@ -519,6 +526,7 @@ export const CHAPTERS: Chapter[] = [
     ], examples: ['parallelogram base 7, h 4 \u2192 28', 'rhombus diagonals 6, 8 \u2192 24'] },
     { title: 'Trapezoids', content: [
       { type: 'text', content: 'A trapezoid (trapezium) is a quadrilateral with exactly one pair of parallel sides \u2014 the bases a and b. The other two sides are the legs.' },
+      { type: 'diagram', content: 'trapezoid' },
       { type: 'heading', content: 'Area' },
       { type: 'text', content: 'A = [1/2] \u00D7 (a + b) \u00D7 h  \u2014 half the sum of the bases times the height.' },
       { type: 'example', content: 'Bases 10 and 6, height 4:  A = [1/2] \u00D7 (10 + 6) \u00D7 4 = 32.' },
@@ -534,11 +542,13 @@ export const CHAPTERS: Chapter[] = [
     ], examples: ['A = \u00BD \u00D7 (10 + 6) \u00D7 4 = 32', 'm = (10 + 6)/2 = 8'] },
     { title: 'Circles and Sectors', content: [
       { type: 'text', content: 'A circle with centre O and radius r:  diameter d = 2r,  circumference  C = 2\u03C0r,  area  A = \u03C0r^2^ . Answers stay in exact form, e.g.  C = 10\u03C0.' },
+      { type: 'diagram', content: 'circle-parts' },
       { type: 'example', content: 'Radius 5:  C = 2\u03C0\u00B75 = 10\u03C0 \u2248 31.4,  A = \u03C0\u00B75^2^ = 25\u03C0 \u2248 78.5.' },
       { type: 'heading', content: 'Key elements' },
       { type: 'text', content: 'A chord is a segment joining two points on the circle. An arc is a part of the circumference. A tangent touches the circle in exactly one point and is perpendicular to the radius at that point.' },
       { type: 'heading', content: 'Sectors (angle \u03B1\u00B0)' },
       { type: 'text', content: 'Arc length:  l = [\u03B1]/360 \u00D7 2\u03C0r .  Sector area:  P = [\u03B1]/360 \u00D7 \u03C0r^2^ .' },
+      { type: 'diagram', content: 'circle-sector' },
       { type: 'example', content: 'Sector of radius 6, angle 60\u00B0:  l = [60]/360 \u00D7 2\u03C0\u00D76 = [1/6] \u00D7 12\u03C0 = 2\u03C0 \u2248 6.28;  P = [60]/360 \u00D7 \u03C0\u00D736 = 6\u03C0 \u2248 18.85.' },
       { type: 'heading', content: 'Inscribed angle' },
       { type: 'text', content: 'An inscribed angle is half of the central angle subtending the same arc. In a semicircle the inscribed angle is always 90\u00B0 (Thales\u2019 theorem).' },
@@ -556,6 +566,7 @@ export const CHAPTERS: Chapter[] = [
       { type: 'example', content: 'Pentagon (n = 5): one interior angle = [3 \u00D7 180\u00B0]/5 = 108\u00B0.' },
       { type: 'heading', content: 'Area' },
       { type: 'text', content: 'A regular n-gon with side s and apothem a (the radius of the inscribed circle, from centre to the middle of a side):  A = [n \u00D7 s \u00D7 a]/2  (it equals the perimeter \u00D7 apothem / 2).' },
+      { type: 'diagram', content: 'polygon-interior' },
       { type: 'text', content: 'Circumradius R is the radius of the circle through all vertices. In a regular hexagon R = s; the shallowest memory: split the hexagon into 6 equilateral triangles.' },
       { type: 'example', content: 'Regular hexagon side 2, apothem \u221A3:  A = [6 \u00D7 2 \u00D7 \u221A3]/2 = 6\u221A3.' },
       { type: 'rule', content: 'Sum of angles: (n \u2212 2) \u00D7 180\u00B0.' },
@@ -564,6 +575,7 @@ export const CHAPTERS: Chapter[] = [
     ], examples: ['hexagon: angle 120\u00B0', 'pentagon: angle 108\u00B0', 'square: angle 90\u00B0'] },
     { title: 'Similarity and Scale', content: [
       { type: 'text', content: 'Two figures are similar when they have the same shape: corresponding angles are equal and corresponding sides are in a constant ratio k (the scale factor).' },
+      { type: 'diagram', content: 'similarity' },
       { type: 'example', content: 'Triangles 3-4-5 and 6-8-10 are similar with scale factor k = 2.' },
       { type: 'heading', content: 'Properties' },
       { type: 'text', content: 'If the scale factor is k, then every length is multiplied by k, every area by k^2^, and every volume by k^3^.' },
@@ -581,6 +593,7 @@ export const CHAPTERS: Chapter[] = [
   { id: 'solids', title: '3D Figures', icon: '\u25A3', color: '#8e44ad', lessons: [
     { title: 'Cubes and Cuboids', content: [
       { type: 'text', content: 'A cube is a box where all edges are equal (edge a). A cuboid (rectangular prism) has three dimensions: length a, width b, height c.' },
+      { type: 'diagram', content: 'cube-cuboid' },
       { type: 'heading', content: 'Cube (edge a)' },
       { type: 'text', content: 'Volume  V = a^3^,  surface area  S = 6a^2^  (six equal square faces).' },
       { type: 'text', content: 'Face diagonal  d\u2081 = a\u221A2,  space diagonal (through the whole cube)  d = a\u221A3.' },
@@ -596,6 +609,7 @@ export const CHAPTERS: Chapter[] = [
     ], examples: ['cube edge 3 \u2192 V = 27, S = 54', 'cuboid 3\u00D74\u00D712 \u2192 d = 13'] },
     { title: 'Prisms', content: [
       { type: 'text', content: 'A prism has two congruent parallel base polygons, connected by lateral faces. In a RIGHT prism every lateral face is a rectangle and the height H is perpendicular to the bases.' },
+      { type: 'diagram', content: 'prism' },
       { type: 'heading', content: 'Formulas' },
       { type: 'text', content: 'Lateral surface area:  S\u2081 = (perimeter of base) \u00D7 H.' },
       { type: 'text', content: 'Total surface area:  S = S\u2081 + 2 \u00D7 A\u208b (two bases + lateral area).' },
@@ -611,6 +625,7 @@ export const CHAPTERS: Chapter[] = [
     ], examples: ['V = A\u208b \u00D7 H', '3-4-5 base, H = 10 \u2192 V = 60'] },
     { title: 'Pyramids', content: [
       { type: 'text', content: 'A pyramid has one polygon base and a single apex; every lateral face is a triangle. A REGULAR pyramid has a regular base and an apex directly above its centre \u2014 all lateral faces are congruent isosceles triangles.' },
+      { type: 'diagram', content: 'pyramid' },
       { type: 'heading', content: 'Key measurements' },
       { type: 'text', content: 'H \u2014 the height (apex to the plane of the base, perpendicular).  h\u1D62 (slant height) \u2014 the height of a lateral face.  For a regular pyramid:  h\u1D62^2^ = H^2^ + r\u1D62^2^, where r\u1D62 is the apothem (inradius) of the base.' },
       { type: 'heading', content: 'Formulas' },
@@ -629,6 +644,7 @@ export const CHAPTERS: Chapter[] = [
     ], examples: ['V = ⅓ A\u208b H', 'square pyramid s = 6, H = 4 \u2192 h\u1D62 = 5'] },
     { title: 'Cylinders', content: [
       { type: 'text', content: 'A right circular cylinder of radius r and height h resembles a tin can: two circular bases and a curved lateral surface.' },
+      { type: 'diagram', content: 'cylinder' },
       { type: 'heading', content: 'Formulas' },
       { type: 'text', content: 'Volume:  V = \u03C0r^2^h.  Base area: \u03C0r^2^.' },
       { type: 'text', content: 'Lateral surface area:  S\u2081 = 2\u03C0rh  (the rectangle you get by unrolling the side: width 2\u03C0r, height h).' },
@@ -642,6 +658,7 @@ export const CHAPTERS: Chapter[] = [
     ], examples: ['V = \u03C0r²h', 'r = 3, h = 5 \u2192 V \u2248 141.3'] },
     { title: 'Cones', content: [
       { type: 'text', content: 'A right circular cone has a circular base and an apex directly above its centre. Radius r, height h, and slant height l \u2014 the length of a generator from the apex to the rim of the base.' },
+      { type: 'diagram', content: 'cone' },
       { type: 'heading', content: 'Formulas' },
       { type: 'text', content: 'Pythagorean relation:  l^2^ = r^2^ + h^2^.' },
       { type: 'text', content: 'Volume:  V = [1/3] \u03C0r^2^h.' },
@@ -658,6 +675,7 @@ export const CHAPTERS: Chapter[] = [
     ], examples: ['3-4-5 cone \u2192 V = 12\u03C0', 'S\u2081 = \u03C0rl'] },
     { title: 'Spheres', content: [
       { type: 'text', content: 'A sphere of radius r is the set of points at distance r from its centre. Diameter d = 2r.' },
+      { type: 'diagram', content: 'sphere' },
       { type: 'heading', content: 'Formulas' },
       { type: 'text', content: 'Volume:  V = [4/3] \u03C0r^3^.' },
       { type: 'text', content: 'Surface area:  S = 4\u03C0r^2^.' },
@@ -673,6 +691,7 @@ export const CHAPTERS: Chapter[] = [
     ], examples: ['V = 4/3 \u03C0r³', 'r = 3 \u2192 V = 36\u03C0'] },
     { title: 'Frustums and Composite Solids', content: [
       { type: 'text', content: 'Slicing a cone (or pyramid) by a plane parallel to its base and removing the top gives a FRUSTUM. For a cone frustum with radii r\u2081, r\u2082 and height h:' },
+      { type: 'diagram', content: 'frustum' },
       { type: 'text', content: 'V = [\u03C0h]/3 \u00D7 (r\u2081^2^ + r\u2081r\u2082 + r\u2082^2^).' },
       { type: 'example', content: 'r\u2081 = 2, r\u2082 = 4, h = 3:  V = [\u03C0 \u00D7 3]/3 \u00D7 (4 + 8 + 16) = 1 \u03C0 \u00D7 28 = 28\u03C0 \u2248 87.96.' },
       { type: 'text', content: 'A frustum of a pyramid (bases B\u2081, B\u2082, height H):  V = [H]/3 \u00D7 (B\u2081 + \u221A(B\u2081B\u2082) + B\u2082).' },
@@ -691,6 +710,7 @@ export const CHAPTERS: Chapter[] = [
       { type: 'example', content: 'The space diagonal of a cube forms with an edge the angle \u03B1 where cos \u03B1 = [1]/[\u221A3] \u2192 \u03B1 \u2248 54.7\u00B0.' },
       { type: 'heading', content: 'Sphere ↔ cube ↔ cylinder' },
       { type: 'text', content: 'Sphere inscribed in a cube: 2r = a. Cube inscribed in a sphere: 2r = a\u221A3. Cylinder inscribed in a cube: cube edge = diameter = height. Cylinder circumscribed about a sphere: r\u1D9C\u1D62\u2113 = r\u1D60\u1D56\u1D60, h = 2r.' },
+      { type: 'diagram', content: 'inscribed-solids' },
       { type: 'example', content: 'Sphere of r = 3 inside a cube: cube edge 6, cube volume 216.' },
       { type: 'heading', content: 'Cuboid diagonals as practice' },
       { type: 'text', content: 'Two-step technique: find a face diagonal with Pythagoras, then use it as the leg for the space diagonal.' },
@@ -703,9 +723,11 @@ export const CHAPTERS: Chapter[] = [
   { id: 'trig', title: 'Trigonometry', icon: '\u03B8', color: '#e67e22', lessons: [
     { title: 'Right-Triangle Ratios', content: [
       { type: 'text', content: 'In a right triangle we compare sides with the angle \u03B1 (< 90\u00B0). The sides are named relative to \u03B1: opposite, adjacent and hypotenuse (the longest side).' },
+      { type: 'diagram', content: 'right-triangle-parts' },
       { type: 'heading', content: 'Definitions' },
       { type: 'text', content: 'sin \u03B1 = [opposite]/[hypotenuse]    cos \u03B1 = [adjacent]/[hypotenuse]    tan \u03B1 = [opposite]/[adjacent].' },
       { type: 'text', content: 'Shortcut: SOH-CAH-TOA (Sine = Opposite/Hypotenuse, Cosine = Adjacent/Hypotenuse, Tangent = Opposite/Adjacent).' },
+      { type: 'diagram', content: 'soh-cah-toa' },
       { type: 'example', content: '3-4-5 triangle, angle \u03B1 opposite the side 3:  sin \u03B1 = [3]/[5] = 0.6,  cos \u03B1 = [4]/[5] = 0.8,  tan \u03B1 = [3]/[4] = 0.75.' },
       { type: 'text', content: 'Useful relations:  tan \u03B1 = [sin \u03B1]/[cos \u03B1]  and  sin^2^\u03B1 + cos^2^\u03B1 = 1.' },
       { type: 'example', content: 'tan 30\u00B0 = [sin 30\u00B0]/[cos 30\u00B0] = [1/2]/[\u221A3/2] = [1]/[\u221A3] = [\u221A3]/3.' },
@@ -718,6 +740,7 @@ export const CHAPTERS: Chapter[] = [
       { type: 'code', content: '        30\u00B0        45\u00B0        60\u00B0\nsin     1/2         \u221A2/2        \u221A3/2\ncos     \u221A3/2       \u221A2/2        1/2\ntan     \u221A3/3       1           \u221A3' },
       { type: 'heading', content: 'Special triangles' },
       { type: 'text', content: '30\u00B0-60\u00B0-90\u00B0 triangle: sides in the ratio 1 : \u221A3 : 2 (short leg, long leg, hypotenuse). 45\u00B0-45\u00B0-90\u00B0: legs equal, hypotenuse = leg \u00D7 \u221A2.' },
+      { type: 'diagram', content: 'special-angles' },
       { type: 'example', content: '30\u00B0-60\u00B0-90\u00B0 with short leg 5: long leg 5\u221A3, hypotenuse 10.' },
       { type: 'example', content: '45\u00B0-45\u00B0-90\u00B0 with leg 6: hypotenuse 6\u221A2.' },
       { type: 'text', content: 'Also remember the boundary values: sin 0\u00B0 = 0, cos 0\u00B0 = 1, sin 90\u00B0 = 1, cos 90\u00B0 = 0.' },
@@ -740,6 +763,7 @@ export const CHAPTERS: Chapter[] = [
     { title: 'Law of Sines', content: [
       { type: 'text', content: 'For any triangle with angles \u03B1, \u03B2, \u03B3 and opposite sides a, b, c:' },
       { type: 'text', content: 'a/sin \u03B1 = b/sin \u03B2 = c/sin \u03B3  (= 2R, where R is the circumradius).' },
+      { type: 'diagram', content: 'law-sines' },
       { type: 'example', content: 'If \u03B1 = 30\u00B0, \u03B2 = 45\u00B0, a = 4:  b = a \u00D7 [sin \u03B2]/[sin \u03B1] = 4 \u00D7 [\u221A2/2]/[1/2] = 4\u221A2.' },
       { type: 'text', content: 'Use the law of sines when you know: two angles and a side (AAS or ASA), or two sides and a non-included angle.' },
       { type: 'text', content: 'From a/sin \u03B1 = 2R the circumradius is R = a/(2\u00B7sin \u03B1).' },
@@ -752,6 +776,7 @@ export const CHAPTERS: Chapter[] = [
     { title: 'Law of Cosines', content: [
       { type: 'text', content: 'For any triangle with sides a, b, c and the included angle \u03B3 between a and b:' },
       { type: 'text', content: 'c^2^ = a^2^ + b^2^ \u2212 2ab\u00B7cos \u03B3.' },
+      { type: 'diagram', content: 'law-cosines' },
       { type: 'example', content: 'a = 3, b = 8, \u03B3 = 60\u00B0:  c^2^ = 9 + 64 \u2212 2\u00B73\u00B78\u00B7[1/2] = 73 \u2212 24 = 49 \u2192 c = 7.' },
       { type: 'text', content: 'For \u03B3 = 90\u00B0 it reduces to the Pythagorean theorem (cos 90\u00B0 = 0):  c^2^ = a^2^ + b^2^.' },
       { type: 'heading', content: 'Finding an angle' },
@@ -765,6 +790,7 @@ export const CHAPTERS: Chapter[] = [
     { title: 'Area of a Triangle with Sine', content: [
       { type: 'text', content: 'The area of a triangle with two sides a, b and the included angle \u03B3 is:' },
       { type: 'text', content: 'A = [1/2] \u00D7 a \u00D7 b \u00D7 sin \u03B3.' },
+      { type: 'diagram', content: 'triangle-area-sine' },
       { type: 'example', content: 'a = 6, b = 8, \u03B3 = 90\u00B0:  A = [1/2] \u00D7 6 \u00D7 8 \u00D7 1 = 24 (the right-triangle formula).' },
       { type: 'example', content: 'a = 6, b = 8, \u03B3 = 30\u00B0:  A = [1/2] \u00D7 6 \u00D7 8 \u00D7 [1/2] = 12.' },
       { type: 'text', content: 'Why the height: h = b\u00B7sin \u03B3, so the classic A = [1/2]ah turns into this formula.' },
@@ -777,6 +803,7 @@ export const CHAPTERS: Chapter[] = [
     ], examples: ['A = \u00BD ab sin \u03B3', '6, 8, 30\u00B0 \u2192 12'] },
     { title: 'Applications: Angles of Elevation and Depression', content: [
       { type: 'text', content: 'Real problems are modelled with a right triangle. The angle of elevation is measured UP from the horizontal; the angle of depression DOWN from the horizontal.' },
+      { type: 'diagram', content: 'elevation-depression' },
       { type: 'example', content: 'The shadow of a tower is 10 m and the sun is at 30\u00B0:  height = 10 \u00D7 tan 30\u00B0 = 10 \u00D7 [\u221A3]/3 = [10\u221A3]/3 m.' },
       { type: 'text', content: 'A ladder against a wall forms a right triangle with the ground and the wall.' },
       { type: 'example', content: 'A 10 m ladder makes 60\u00B0 with the ground: the top reaches 10 \u00D7 sin 60\u00B0 = 10 \u00D7 [\u221A3]/2 = 5\u221A3 m; the foot is 10 \u00D7 cos 60\u00B0 = 5 m from the wall.' },
@@ -788,6 +815,7 @@ export const CHAPTERS: Chapter[] = [
     ], examples: ['shadow 10 m, 30\u00B0 \u2192 [10\u221A3]/3 m', 'ladder 10 m, 60\u00B0 \u2192 5\u221A3 m'] },
     { title: 'Unit Circle, Signs and Identities', content: [
       { type: 'text', content: 'The unit circle has radius 1 centred at the origin. The point where the angle \u03B1 meets the circle has coordinates (cos \u03B1, sin \u03B1).' },
+      { type: 'diagram', content: 'unit-circle' },
       { type: 'code', content: '0\u00B0:      (1, 0)\n90\u00B0:     (0, 1)\n180\u00B0:    (\u22121, 0)\n270\u00B0:    (0, \u22121)' },
       { type: 'heading', content: 'Signs in quadrants (ASTC)' },
       { type: 'text', content: 'All positive in QI, Sine positive in QII, Tangent positive in QIII, Cosine positive in QIV. (Memory aid: All–Sin–Tan–Cos.)' },

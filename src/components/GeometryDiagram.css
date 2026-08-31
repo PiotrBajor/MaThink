@@ -1,0 +1,23 @@
+.geom-diagram-wrap {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 4px 0;
+  text-align: center;
+}
+
+.geom-diagram {
+  width: 100%;
+  max-width: 460px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.geom-diagram-missing {
+  padding: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: italic;
+}

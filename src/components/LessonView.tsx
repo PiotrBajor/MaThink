@@ -7,6 +7,7 @@ import './LessonView.css'
 import CalcPopover from './CalcPopover'
 
 const MathGraph = lazy(() => import('./MathGraph'))
+const GeometryDiagram = lazy(() => import('./GeometryDiagram'))
 
 interface Props {
   chapterId: string
@@ -118,6 +119,11 @@ export default function LessonView({ chapterId, lessonIndex, chapterColor, lesso
             if (block.type === 'graph') return (
               <Suspense key={i} fallback={<div className="lc-mathgraph-placeholder">Loading graph...</div>}>
                 <MathGraph expr={block.content} color={chapterColor} />
+              </Suspense>
+            )
+            if (block.type === 'diagram') return (
+              <Suspense key={i} fallback={<div className="lc-mathgraph-placeholder">Loading diagram...</div>}>
+                <GeometryDiagram id={block.content} />
               </Suspense>
             )
             return <p key={i} className="lc-text"><Rich text={block.content} /></p>
